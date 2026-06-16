@@ -6,7 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include "preamble.h"
-
+#include <unistd.h>
+#include <fcntl.h>  
 #include "sanity_check.cpp"
 
 #include "config.h"
@@ -71,7 +72,6 @@ struct PrimeFinder
             if (is_prime)
             {
                 primes.push_back(i);
-                via<isLogger>(this) << i << '\n';
             }
         }
         return primes;
@@ -86,20 +86,33 @@ using primeFinderModule = context::SimpleModule<
 template <typename CONTEXT>
 struct Logger
 {
-    std::ofstream returnFile;
-    Logger(std::string filePath) : returnFile(filePath)
+    int returnFile;
+    Logger(std::string filePath) 
     {
+        returnFile = open(filePath.c_str(), O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR);
+        if (returnFile == -1) {
+            std::cout << "could not open file: " << filePath << std::endl;
+        }
     }
-    Logger(Logger const &&other) : returnFile(std::move(other.returnFile)) {}
+    Logger(Logger &&other) : returnFile(std::move(other.returnFile)) {}
     template <typename T>
     Logger &operator<<(T message)
     {
-        returnFile << message;
+        std::stringstream ss;
+        ss << message;
+        toLog(ss.str());
         return (*this);
     }
     void toLog(std::string message)
     {
-        returnFile << "Log " << message << '\n';
+
+        int bytes = write(returnFile, message.c_str(), message.size());
+        if (bytes < 0){
+            std::cout << "write error" << '\n';
+            close(returnFile);
+            return;
+        }
+        close(returnFile);
     }
 };
 
@@ -143,15 +156,18 @@ void run()
 
         CTX ctx(
             As<isPrimeFinder, CTX>{},
-            As<isLogger, CTX>{"log.txt"});
+            As<isLogger, CTX>{"./log.txt"});
 
         std::vector<int> primes = as<isPrimeFinder>(ctx).findPrimes(1, 100);
         std::stringstream stringPrimes;
         for (int prime : primes)
         {
-            as<isLogger>(ctx) << prime << " ";
+            stringPrimes << prime << " ";
         }
-        as<isLogger>(ctx) << '\n';
+        std::string returnValue = stringPrimes.str();
+        as<isLogger>(ctx).toLog(returnValue); 
+      
+
     }
     else
     {
