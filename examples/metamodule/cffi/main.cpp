@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 
 struct TraitA
 {
@@ -89,6 +90,16 @@ struct FFIGenImpl
         addFunctionHeaders(header_file);
         addFunctionBody(cpp_file);
         header_file.close();
+        cpp_file.close();
+
+        char *args[] = {
+            (char *)"g++",
+            (char *)"cffi.cpp",
+            nullptr
+            // other cpp files
+        };
+
+        execvp("g++", args);
     }
 
     template <typename T>
@@ -176,7 +187,7 @@ struct FFIGenImpl
             std::string resultType = container::repr::type_name<typename PureFnEq<method_pointer_sig>::Result>();
             std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
-            cpp_file << "include \"cffi.h\""
+            cpp_file << "#include \"cffi.h\""
                      << std::endl
                      << resultType << " " << trait_name << "(" << header << ")"
                      << "{"
@@ -193,30 +204,6 @@ struct FFIGenImpl
         }
     }
 
-    //.h
-    // include.include
-    // all the .h from the client provided
-
-    //.cpp
-    //.h of the fi;e
-    /*
-
-    // do these have to  be by reference?
-    template <typename T>
-    void addParamToString(std::string &param_list)
-    {
-        return;
-    }
-
-    template <typename T, typename... Ts>
-    void addParamToString(std::string &param_list, T const &head, Ts const &...tail)
-    {
-        // should we have like param names like x1, x2, x3 cuz rn its js a list of types
-        // should i call type name on head -> ex container::repr::type_name<CurrTrait>()
-        param_list += head + ", ";
-        addParamToString(param_list, tail...);
-    }
-    */
     template <typename T>
     struct ParamListToString;
 
@@ -292,6 +279,24 @@ struct FFIGenImpl
 
     void addFunctionHeaders(std::fstream &header_file)
     {
+        /*
+        #include <thread>
+        #include "../../../include/include.h"
+        #include <functional>
+        #include <iostream>
+        #include <fstream>
+        */
+        header_file << "#include <thread>"
+                    << std::endl
+                    << "#include \"../../../include/include.h\""
+                    << std::endl
+                    << "#include <functional>"
+                    << std::endl
+                    << "#include <iostream>"
+                    << std::endl
+                    << "#include <fstream>"
+                    << std::endl;
+
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFISet; // get every FFI specialization
         addFunctionHeaderRecurse<FFISet>(header_file);
     }
