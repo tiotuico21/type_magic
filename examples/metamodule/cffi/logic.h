@@ -1,0 +1,442 @@
+#include <typeinfo>
+struct TraitA
+{
+};
+
+struct TraitB
+{
+};
+
+template <typename TRAIT>
+struct FFIEntry
+{
+};
+
+struct FFIGen
+{
+};
+
+template <typename CONTEXT>
+struct BImpl
+{
+    float fn(double x)
+    {
+        std::cout << "entered trait b and will multiplying input by 3" << std::endl;
+        float returnVal = x * 3.0;
+        return returnVal;
+    }
+};
+
+using BModule = context::SimpleModule<
+    Meta<BImpl>,
+    context::RequirementSet<>,
+    context::ImplementationSet<TraitB, FFIEntry<TraitB>>>;
+
+template <typename CONTEXT>
+struct AImpl
+{
+    std::string member;
+    AImpl()
+    {
+        member = "test member";
+    }
+    void fn(int x, bool y)
+    {
+        std::cout << "member: " << member << std::endl;
+        if (y)
+        {
+            std::cout << "hello there trait_a was true so here is your number: " << x << std::endl;
+        }
+        else
+        {
+            std::cout << "hello there trait a was false so i will not show your number" << std::endl;
+        }
+    }
+};
+
+using AModule = context::SimpleModule<
+    Meta<AImpl>,
+    context::RequirementSet<>,
+    context::ImplementationSet<TraitA, FFIEntry<TraitA>>>;
+
+template <typename Class, typename... Types>
+struct TypeList
+{
+};
+
+template <typename T>
+struct PureFnEq;
+
+template <typename RES, typename CLASS, typename... ARGS>
+struct PureFnEq<RES (CLASS::*)(ARGS...)>
+{
+    typedef RES type(CLASS *, ARGS...);
+    // do i make a new template struct js fir the type list
+    // why do we havw to iterate thru the class *
+    // what kinda type is res
+
+    // am i even declaring a type here if all i want is a Type Array hold the arguments which are params
+    typedef container::TypeArray<CLASS *, ARGS...> Args;
+    typedef RES Result;
+};
+
+// how does it work when you add two type def to this struct bc wwhen you pass in a param what do u do to return the one u want
+
+template <typename CONTEXT>
+struct FFIGenImpl
+{
+    // FFIGen(){}
+    void genffi(std::string client_logic_header_file)
+    {
+        std::fstream header_file;
+        std::fstream cpp_file;
+        header_file.open("cffi.h", std::ios::trunc | std::ios::out);
+        cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
+        addFunctionHeaders(header_file, client_logic_header_file);
+        addFunctionBody(cpp_file);
+        header_file.close();
+        cpp_file.close();
+
+        // why fPIC smthn about address reolacation
+        char *args[] = {
+            (char *)"g++",
+            (char *)"-std=c++20",
+            (char *)"-shared",
+            (char *)"-fPIC",
+            (char *)"cffi.cpp",
+            (char *)"-o",
+            (char *)"my_dynamic_library.so",
+            nullptr};
+
+        execvp("g++", args);
+
+        execvp("g++", args);
+    }
+
+    template <typename T>
+    void addFunctionGenRecurse(std::fstream &gen_file, bool isCpp)
+    {
+        if constexpr (std::is_same<T, container::TypeSet<>>::value)
+        {
+            std::cout << "all empty" << std::endl;
+            return;
+        }
+        // why did i have to guard this with an else
+        else
+        {
+            typedef typename T::MapType::HeadItemType CurrFFISpec;
+            typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
+            std::string typenameMangle = typeid(container::repr::type_name<CurrTrait>()).name();
+            std::cout << typenameMangle << std::endl;
+            std::string trait_name = container::repr::type_name<CurrTrait>();
+            std::string trait_name_snake_case = toSnakeCase(trait_name);
+
+            // function sig
+            typedef As<CurrTrait, CONTEXT> sig_component;
+
+            // how does method sig of purefneq-> bc thats the format the function in
+            typedef decltype(&sig_component::fn) method_pointer_sig;
+
+            std::string func_sig = container::repr::type_name<CONTEXT>(); //
+            if (isCpp)
+            {
+
+                // function name
+
+                // std::cout << "func sig -> " << func_sig << std::endl;
+
+                // func param list
+                // get the args list
+
+                // iterate through the classes to because each can have their own param list
+
+                // should prob put stuff in a helper method
+
+                // i want to input the method pointer sig and reach in to get the args type def to make a type list i can iterate over
+                typedef typename PureFnEq<method_pointer_sig>::Args method_args_list;
+                typedef typename method_args_list::template PopFront<>::type inner_args_list;
+
+                typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+
+                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
+                std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
+
+                //   std::cout << "param_list:" << param_list << std::endl;
+                /*
+                int indexForName = findSpace(func_sig);
+                if (indexForName == -1)
+                {
+                    return;
+                }
+                */
+
+                std::string resultType = container::repr::type_name<typename PureFnEq<method_pointer_sig>::Result>();
+                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
+
+                std::cout << "writing to the cffi.h" << std::endl;
+                gen_file << "extern \"C\" "
+                         << resultType << " " << trait_name_snake_case << "(" << header << ")"
+                         << "{"
+                         << std::endl
+                         << "\t"
+                         << container::repr::type_name<CONTEXT>()
+                         << "* ptr = ("
+                         << container::repr::type_name<CONTEXT>()
+                         << "*) arg0;"
+                         << std::endl
+                         << "\treturn as<"
+                         << trait_name
+                         << ">(*ptr).fn("
+                         << arg_list
+                         << ");"
+                         << std::endl
+                         << "}"
+                         << std::endl;
+                std::cout << "finished writing to the cffi.cpp with new function gen" << std::endl;
+                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
+            }
+            else
+            {
+
+                //    std::cout << "func sig -> " << func_sig << std::endl;
+
+                // func param list
+                // get the args list
+
+                // iterate through the classes to because each can have their own param list
+
+                // should prob put stuff in a helper method
+
+                // i want to input the method pointer sig and reach in to get the args type def to make a type list i can iterate over
+                typedef typename PureFnEq<method_pointer_sig>::Args method_args_list;
+                typedef typename method_args_list::template PopFront<>::type inner_args_list;
+                typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+
+                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
+                // std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
+
+                //   std::cout << "param_list:" << param_list << std::endl;
+                /*
+                int indexForName = findSpace(func_sig);
+                if (indexForName == -1)
+                {
+                    return;
+                }
+                */
+
+                std::string resultType = container::repr::type_name<typename PureFnEq<method_pointer_sig>::Result>();
+                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
+
+                std::cout << "writing to the cffi.h" << std::endl;
+                gen_file << "extern \"C\" "
+                         << resultType
+                         << " "
+                         << trait_name_snake_case
+                         << "("
+                         << header
+                         << ")"
+                         << ";"
+                         << std::endl;
+                std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
+                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
+            }
+        }
+    }
+
+    void addConstructor(std::fstream &gen_file, bool isCpp)
+    {
+        gen_file << "extern \"C\" void* construct()";
+
+        // container::repr::type_name<CONTEXT>()
+        if (isCpp)
+        {
+            gen_file << "{"
+                     << std::endl
+                     << "\treturn (void*) new "
+                     << container::repr::type_name<CONTEXT>()
+                     << ";"
+                     << std::endl
+                     << "}"
+                     << std::endl;
+        }
+        else
+        {
+            gen_file << ";"
+                     << std::endl;
+        }
+    }
+
+    std::string toSnakeCase(std::string &trait_name)
+    {
+        std::string snake_case_trait_name;
+
+        for (size_t i = 0; i < trait_name.size(); i++)
+        {
+            if (std::isupper(static_cast<unsigned char>(trait_name[i])))
+            {
+                if (i != 0)
+                {
+                    snake_case_trait_name += '_';
+                }
+                snake_case_trait_name += std::tolower(static_cast<unsigned char>(trait_name[i]));
+            }
+            else
+            {
+                snake_case_trait_name += trait_name[i];
+            }
+        }
+        return snake_case_trait_name;
+    }
+
+    template <typename T>
+    struct ParamListToString;
+
+    // template <typename... ARGS>
+    template <typename... TAIL>
+    struct ParamListToString<container::TypeArray<TAIL...>>
+    {
+        static std::string makeString(int index, bool includeType)
+        {
+            std::cout << "i am going into the base case" << std::endl;
+            return "";
+        }
+    };
+
+    template <typename HEAD, typename... TAIL>
+    struct ParamListToString<container::TypeArray<HEAD, TAIL...>>
+    {
+        static std::string makeString(int index, bool includeType)
+        {
+            std::cout << "i am going into the recursive case" << std::endl;
+            std::string str_head_type = container::repr::type_name<HEAD>();
+            std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType);
+
+            std::string total_param_list = "";
+            if (includeType)
+            {
+                if (index == 0)
+                {
+                    total_param_list += "void*";
+                }
+                else
+                {
+                    total_param_list += container::repr::type_name<HEAD>();
+                }
+            }
+            if (container::TypeArray<TAIL...>::MapType::ITEM_COUNT == 0)
+            {
+                if (includeType)
+                {
+                    total_param_list += " arg" + std::to_string(index);
+                }
+                else
+                {
+                    total_param_list += "arg" + std::to_string(index);
+                }
+            }
+            else
+            {
+                if (includeType)
+                {
+                    total_param_list += " arg" + std::to_string(index) + ", " + str_types_from_tail;
+                }
+                else
+                {
+                    total_param_list += "arg" + std::to_string(index) + ", " + str_types_from_tail;
+                }
+            }
+            // std::cout << "toal param inside tostring recursive: " << total_param_list << std::endl;
+            return total_param_list;
+        }
+    };
+
+    int findSpace(std::string func_sig)
+    {
+        bool entered = false;
+        int depth = 0;
+        for (int i = func_sig.length(); i >= 0; i--)
+        {
+
+            if (func_sig[i] == ')' && !entered)
+            {
+                depth = 1;
+                entered = true;
+            }
+            else if (func_sig[i] == '(' && entered)
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return i - 1;
+                }
+            }
+
+            else if (func_sig[i] == ')' && entered)
+            {
+                depth++;
+            }
+        }
+        return -1;
+    }
+
+    // idk if we need his as its a template , i feel like i need to wire smthn so that we js filter for FFI
+
+    void addFunctionHeaders(std::fstream &header_file, std::string client_header)
+    {
+        /*
+        #include <thread>
+        #include "../../../include/include.h"
+        #include <functional>
+        #include <iostream>
+        #include <fstream>
+        */
+        header_file << "#include <thread>"
+                    << std::endl
+                    << "#include \"../../../include/include.h\""
+                    << std::endl
+                    << "#include <functional>"
+                    << std::endl
+                    << "#include <iostream>"
+                    << std::endl
+                    << "#include <fstream>"
+                    << std::endl
+                    << "#include \"" << client_header << "\""
+                    << std::endl;
+
+        addConstructor(header_file, false);
+        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFISet; // get every FFI specialization
+        addFunctionGenRecurse<FFISet>(header_file, false);
+    }
+
+    void addFunctionBody(std::fstream &cpp_file)
+    {
+        std::cout << "adding function body" << std::endl;
+        cpp_file << "#include \"cffi.h\""
+                 << std::endl
+                 << std::endl;
+        addConstructor(cpp_file, true);
+        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
+        addFunctionGenRecurse<FFICppSet>(cpp_file, true);
+    }
+
+    /*
+    void makeBody()
+    {
+    }
+
+
+    extern "C" float b(double x)
+    {
+        return via<TraitB>(this).fn(x);
+    }
+    extern "C" float a(int x, int y)
+    {
+        return via<TraitA>(this).fn(x, y);
+    }
+        */
+};
+
+using FFIGenModule = context::SimpleModule<
+    Meta<FFIGenImpl>,
+    context::RequirementSet<>,
+    context::ImplementationSet<FFIGen>>;
