@@ -127,7 +127,8 @@ struct FFIGenImpl
             typedef typename T::MapType::HeadItemType CurrFFISpec;
             typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
             std::string typenameMangle = typeid(container::repr::type_name<CurrTrait>()).name();
-            std::cout << typenameMangle << std::endl;
+            std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
+            std::cout << generated_func_name << std::endl;
             std::string trait_name = container::repr::type_name<CurrTrait>();
             std::string trait_name_snake_case = toSnakeCase(trait_name);
 
@@ -175,7 +176,7 @@ struct FFIGenImpl
 
                 std::cout << "writing to the cffi.h" << std::endl;
                 gen_file << "extern \"C\" "
-                         << resultType << " " << trait_name_snake_case << "(" << header << ")"
+                         << resultType << " " << generated_func_name << "(" << header << ")"
                          << "{"
                          << std::endl
                          << "\t"
@@ -231,7 +232,7 @@ struct FFIGenImpl
                 gen_file << "extern \"C\" "
                          << resultType
                          << " "
-                         << trait_name_snake_case
+                         << generated_func_name
                          << "("
                          << header
                          << ")"

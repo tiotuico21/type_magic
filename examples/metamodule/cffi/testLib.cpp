@@ -6,8 +6,8 @@ int main()
     void *handle = dlopen("./my_dynamic_library.so", RTLD_NOW);
     std::cout << "handle: " << handle << std::endl;
 
-    void *fn_ptr = dlsym(handle, "trait_a");
-    void *fn_ptr_b = dlsym(handle, "trait_b");
+    void *fn_ptr = dlsym(handle, "_TYPEMAGICNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEETraitA");
+    void *fn_ptr_b = dlsym(handle, "_TYPEMAGICNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEETraitB");
     void *constructor = dlsym(handle, "construct");
 
     std::cout << fn_ptr << std::endl;
