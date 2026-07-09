@@ -9,6 +9,7 @@
 using RootModule = context::ModuleBundle<
     AModule,
     BModule,
+    AllocModule,
     FFIGenModule>;
 
 template <typename CTX>

@@ -1,6 +1,22 @@
 #include <typeinfo>
+
+template <auto THING>
+struct Fn
+{
+};
+
+template <typename RES, typename CLASS, typename... ARGS>
+struct Fn<RES (CLASS::*)(ARGS...)>
+{
+    typedef RES Result;
+    typedef CLASS Class;
+    typedef container::TypeArray<ARGS...>;
+    typedef RES (CLASS::*)(ARGS...) type;
+}
+
 struct TraitA
 {
+    struct
 };
 
 struct TraitB
@@ -16,8 +32,64 @@ struct FFIGen
 {
 };
 
+struct Alloc
+{
+    struct AllocFun
+    {
+    };
+    struct FreeFun
+    {
+    };
+    typedef container::TypeMap<
+        container::Binding<AllocFun, void *(size_t)>,
+        container::Binding<FreeFun, void(void *)>>
+        MemList;
+};
+
+template <typename... ENTRIES>
+struct StaticTable
+{
+    typedef container::TypeMap<ENTRIES...> EntriesTypeMap;
+    template <size_t INDEX, typename... ARGS>
+    static auto call(FUNC KEY)
+    {
+        // are we going into the typemap namespace to then get item at but
+        // then how would it know which type map
+        return typename EntriesTypeMap::template ItemAt<KEY>::type;
+    }
+};
+
 template <typename CONTEXT>
-struct BImpl
+struct AllocImpl
+{
+    void *alloc_fun_impl(size_t size)
+    {
+        return malloc(size);
+    }
+    void free_fun_impl(void *ptr)
+    {
+        return free(ptr);
+    }
+
+    typedef StaticTable <
+        container::Binding <
+        Alloc::AllocFun,
+        Fn << &AllocImpl::alloc_fun_impl >>>,
+        container::Binding <
+            Alloc::FreeFun,
+        Fn << &AllocImpl::free_fun_impl >>>>
+            STable;
+};
+
+using AllocModule = context::SimpleModule<
+    Meta<AllocImpl>,
+    context::RequirementSet<>,
+    context::ImplementationSet<Alloc, FFIEntry<Alloc>>>
+    // sp the bindings are making the alloc with fn to a type so to speak which is a class and we are saying
+    // the template will have 0 to more arguments of types of any given auto
+
+    template <typename CONTEXT>
+    struct BImpl
 {
     float fn(double x)
     {
@@ -126,7 +198,7 @@ struct FFIGenImpl
         {
             typedef typename T::MapType::HeadItemType CurrFFISpec;
             typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
-            std::string typenameMangle = typeid(container::repr::type_name<CurrTrait>()).name();
+            std::string typenameMangle = typeid(CurrTrait).name();
             std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
             std::cout << generated_func_name << std::endl;
             std::string trait_name = container::repr::type_name<CurrTrait>();
@@ -135,7 +207,17 @@ struct FFIGenImpl
             // function sig
             typedef As<CurrTrait, CONTEXT> sig_component;
 
-            // how does method sig of purefneq-> bc thats the format the function in
+            // type map of functions we can then iterate through to do whats below
+            // goin to need new func mangle names
+            // or we can go into the static table type map
+            // 178 calls a recursive function using specialized structs
+            // takes a static table
+            // expose the first argument of the template binding for func name
+            // what is the template fn though
+            // already know the Trait
+
+            read_all_functions<typename sig_component::STable>();
+
             typedef decltype(&sig_component::fn) method_pointer_sig;
 
             std::string func_sig = container::repr::type_name<CONTEXT>(); //
@@ -243,6 +325,73 @@ struct FFIGenImpl
             }
         }
     }
+
+    template <typename... T>
+    struct ReadEveryFunction;
+
+    template <typename... TAIL>
+    struct ReadEveryFunction<container::TypeMap<TAIL...>>
+    {
+
+        static void exec(bool isCpp, std::string traitName)
+        {
+            std::cout << "i am going into the base case of readComponentFunctions" << std::endl;
+            return "";
+        }
+    };
+
+    template <typename KEY, typename ITEM, typename... TAIL>
+    struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
+    {
+        static void exec(bool isCpp, std::string traitName, )
+        {
+            std::string mangle_func_name = typeid(KEY).name();
+            std::string reg_str_func_name = container::repr::type_name<KEY>();
+
+            if (isCpp)
+            {
+                // how will item know it is fn struct
+                typedef ITEM::ARGS method_args_list;
+
+                typedef typename method_args_list::template PopFront<>::type inner_args_list;
+                typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+
+                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
+                std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
+
+                std::string resultType = ITEM::Result;
+                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
+
+                gen_file << "extern \"C\" "
+                         << resultType << " " << generated_func_name << "(" << header << ")"
+                         << "{"
+                         << std::endl
+                         << "\t"
+                         << container::repr::type_name<CONTEXT>()
+                         << "* ptr = ("
+                         << container::repr::type_name<CONTEXT>()
+                         << "*) arg0;"
+                         << std::endl
+                         << "\treturn As<"
+                         << traitName
+                         << ", "
+                         << container::repr::type_name<CONTEXT>()
+                         << ">::StaticTable::call<"
+                         << reg_str_func_name
+                         << ">(&as<"
+                         << traitName
+                         << ">(ptr), "
+                         << inner_args_list
+                         << ");"
+                         << std::endl
+                         << "}"
+                         << std::endl;
+            }
+            else
+            {
+            }
+        }
+    };
 
     void addConstructor(std::fstream &gen_file, bool isCpp)
     {
