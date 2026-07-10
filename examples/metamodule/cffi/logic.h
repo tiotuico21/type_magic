@@ -1,26 +1,53 @@
 #include <typeinfo>
+#include "../../../include/include.h"
 
-template <auto THING>
+#include <chrono>
+#include <thread>
+
+#include <functional>
+
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
+#define STRINGIFY_HELPER(x) #x
+#define LINE_STRING STRINGIFY(__LINE__)
+#ifdef COLOR_ASSERTS
+#define ASSERT_TEXT(TEXT) "\n\n\e[33m\e[1m" __FILE__ ":" LINE_STRING " \e[0m\e[33m" TEXT "\e[0m\n"
+#else
+#define ASSERT_TEXT(TEXT) "\n\n" __FILE__ ":" LINE_STRING TEXT "\n"
+#endif
+
+// value
+
+template <auto... THING>
 struct Fn
 {
 };
 
-template <typename RES, typename CLASS, typename... ARGS>
-struct Fn<RES (CLASS::*)(ARGS...)>
+// type
+template <typename RES, typename CLASS, typename... ARGS, RES (CLASS::*X)(ARGS...)>
+struct Fn<X>
 {
+    static constexpr auto value = X;
     typedef RES Result;
     typedef CLASS Class;
-    typedef container::TypeArray<ARGS...>;
-    typedef RES (CLASS::*)(ARGS...) type;
-}
+    typedef container::TypeArray<ARGS...> Args;
+    typedef RES (CLASS::*type)(ARGS...);
 
-struct TraitA
-{
-    struct
+    static auto call(CLASS *self, ARGS... args)
+    {
+        return (self->*X)(args...);
+    }
 };
 
-struct TraitB
+template <typename TYPE>
+struct IsFn
 {
+    static constexpr bool value = false;
+};
+
+template <auto ARG>
+struct IsFn<Fn<ARG>>
+{
+    static constexpr bool value = true;
 };
 
 template <typename TRAIT>
@@ -32,6 +59,55 @@ struct FFIGen
 {
 };
 
+/*
+static_assert(
+                !LossyCombineType::duplicate_key,
+                ASSERT_TEXT(
+                    "ERROR: Combine operation resulted in duplicate keys. "
+                    "If duplicates should be coalesced, use TypeMap's LossyCombine operation instead."));
+*/
+
+template <typename... ENTRIES>
+struct StaticTable
+{
+    typedef container::TypeMap<ENTRIES...> EntriesTypeMap;
+    static_assert(
+        EntriesTypeMap::template FilterItems<container::util::Negate<IsFn>::template Template>::type::ITEM_COUNT == 0,
+        ASSERT_TEXT("ERROR: No bindings that have items with the appropriate Fn format"));
+
+    template <typename TRAIT, typename... ARGS>
+    static auto call(ARGS... args)
+    {
+        // are we going into the typemap namespace to then get item at but
+        // then how would it know which type map
+        typedef typename EntriesTypeMap::template ItemAt<TRAIT>::type FnPtr;
+        // return func_ptr::call(func_ptr::Args)
+        return FnPtr::call(args...);
+    }
+};
+
+struct TraitA
+{
+    //  AConstruct{};
+    struct AFn
+    {
+    };
+    typedef StaticTable<
+        // container::Binding<AConstruct, (this) * ()>,
+        container::Binding<AFn, void *(int, bool)>>
+        STable;
+};
+
+struct TraitB
+{
+    struct BFn
+    {
+    };
+    typedef StaticTable<
+        container::Binding<BFn, float *(double)>>
+        STable;
+};
+
 struct Alloc
 {
     struct AllocFun
@@ -40,23 +116,10 @@ struct Alloc
     struct FreeFun
     {
     };
-    typedef container::TypeMap<
+    typedef StaticTable<
         container::Binding<AllocFun, void *(size_t)>,
         container::Binding<FreeFun, void(void *)>>
-        MemList;
-};
-
-template <typename... ENTRIES>
-struct StaticTable
-{
-    typedef container::TypeMap<ENTRIES...> EntriesTypeMap;
-    template <size_t INDEX, typename... ARGS>
-    static auto call(FUNC KEY)
-    {
-        // are we going into the typemap namespace to then get item at but
-        // then how would it know which type map
-        return typename EntriesTypeMap::template ItemAt<KEY>::type;
-    }
+        STable;
 };
 
 template <typename CONTEXT>
@@ -71,25 +134,27 @@ struct AllocImpl
         return free(ptr);
     }
 
-    typedef StaticTable <
-        container::Binding <
-        Alloc::AllocFun,
-        Fn << &AllocImpl::alloc_fun_impl >>>,
-        container::Binding <
+    typedef StaticTable<
+        container::Binding<
+            Alloc::AllocFun,
+            Fn<
+                &AllocImpl<CONTEXT>::alloc_fun_impl>>,
+        container::Binding<
             Alloc::FreeFun,
-        Fn << &AllocImpl::free_fun_impl >>>>
-            STable;
+            Fn<
+                &AllocImpl<CONTEXT>::free_fun_impl>>>
+        STable;
 };
 
 using AllocModule = context::SimpleModule<
     Meta<AllocImpl>,
     context::RequirementSet<>,
-    context::ImplementationSet<Alloc, FFIEntry<Alloc>>>
-    // sp the bindings are making the alloc with fn to a type so to speak which is a class and we are saying
-    // the template will have 0 to more arguments of types of any given auto
+    context::ImplementationSet<Alloc, FFIEntry<Alloc>>>;
+// sp the bindings are making the alloc with fn to a type so to speak which is a class and we are saying
+// the template will have 0 to more arguments of types of any given auto
 
-    template <typename CONTEXT>
-    struct BImpl
+template <typename CONTEXT>
+struct BImpl
 {
     float fn(double x)
     {
@@ -97,6 +162,10 @@ using AllocModule = context::SimpleModule<
         float returnVal = x * 3.0;
         return returnVal;
     }
+    typedef StaticTable<
+        container::Binding<
+            TraitB::BFn, Fn<&BImpl<CONTEXT>::fn>>>
+        STable;
 };
 
 using BModule = context::SimpleModule<
@@ -124,6 +193,23 @@ struct AImpl
             std::cout << "hello there trait a was false so i will not show your number" << std::endl;
         }
     }
+    typedef StaticTable<
+        container::Binding<
+            TraitA::AFn, Fn<&AImpl<CONTEXT>::fn>>>
+        STable;
+
+    /*
+      typedef StaticTable<
+        container::Binding<
+            Alloc::AllocFun,
+            Fn<
+                &AllocImpl<CONTEXT>::alloc_fun_impl>>,
+        container::Binding<
+            Alloc::FreeFun,
+            Fn<
+                &AllocImpl<CONTEXT>::free_fun_impl>>>
+        STable;
+    */
 };
 
 using AModule = context::SimpleModule<
@@ -181,8 +267,6 @@ struct FFIGenImpl
             nullptr};
 
         execvp("g++", args);
-
-        execvp("g++", args);
     }
 
     template <typename T>
@@ -215,67 +299,12 @@ struct FFIGenImpl
             // expose the first argument of the template binding for func name
             // what is the template fn though
             // already know the Trait
-
-            read_all_functions<typename sig_component::STable>();
-
-            typedef decltype(&sig_component::fn) method_pointer_sig;
+            // typedef decltype(&sig_component::fn) method_pointer_sig;
 
             std::string func_sig = container::repr::type_name<CONTEXT>(); //
             if (isCpp)
             {
-
-                // function name
-
-                // std::cout << "func sig -> " << func_sig << std::endl;
-
-                // func param list
-                // get the args list
-
-                // iterate through the classes to because each can have their own param list
-
-                // should prob put stuff in a helper method
-
-                // i want to input the method pointer sig and reach in to get the args type def to make a type list i can iterate over
-                typedef typename PureFnEq<method_pointer_sig>::Args method_args_list;
-                typedef typename method_args_list::template PopFront<>::type inner_args_list;
-
-                typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
-
-                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
-                std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
-
-                //   std::cout << "param_list:" << param_list << std::endl;
-                /*
-                int indexForName = findSpace(func_sig);
-                if (indexForName == -1)
-                {
-                    return;
-                }
-                */
-
-                std::string resultType = container::repr::type_name<typename PureFnEq<method_pointer_sig>::Result>();
-                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
-
-                std::cout << "writing to the cffi.h" << std::endl;
-                gen_file << "extern \"C\" "
-                         << resultType << " " << generated_func_name << "(" << header << ")"
-                         << "{"
-                         << std::endl
-                         << "\t"
-                         << container::repr::type_name<CONTEXT>()
-                         << "* ptr = ("
-                         << container::repr::type_name<CONTEXT>()
-                         << "*) arg0;"
-                         << std::endl
-                         << "\treturn as<"
-                         << trait_name
-                         << ">(*ptr).fn("
-                         << arg_list
-                         << ");"
-                         << std::endl
-                         << "}"
-                         << std::endl;
-                std::cout << "finished writing to the cffi.cpp with new function gen" << std::endl;
+                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file);
                 addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
             }
             else
@@ -290,6 +319,7 @@ struct FFIGenImpl
 
                 // should prob put stuff in a helper method
 
+                /*
                 // i want to input the method pointer sig and reach in to get the args type def to make a type list i can iterate over
                 typedef typename PureFnEq<method_pointer_sig>::Args method_args_list;
                 typedef typename method_args_list::template PopFront<>::type inner_args_list;
@@ -299,13 +329,7 @@ struct FFIGenImpl
                 // std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
 
                 //   std::cout << "param_list:" << param_list << std::endl;
-                /*
-                int indexForName = findSpace(func_sig);
-                if (indexForName == -1)
-                {
-                    return;
-                }
-                */
+
 
                 std::string resultType = container::repr::type_name<typename PureFnEq<method_pointer_sig>::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
@@ -320,7 +344,8 @@ struct FFIGenImpl
                          << ")"
                          << ";"
                          << std::endl;
-                std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
+                */
+                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(false, trait_name, gen_file);
                 addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
             }
         }
@@ -333,17 +358,17 @@ struct FFIGenImpl
     struct ReadEveryFunction<container::TypeMap<TAIL...>>
     {
 
-        static void exec(bool isCpp, std::string traitName)
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file)
         {
             std::cout << "i am going into the base case of readComponentFunctions" << std::endl;
-            return "";
+            return;
         }
     };
 
     template <typename KEY, typename ITEM, typename... TAIL>
     struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
     {
-        static void exec(bool isCpp, std::string traitName, )
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file)
         {
             std::string mangle_func_name = typeid(KEY).name();
             std::string reg_str_func_name = container::repr::type_name<KEY>();
@@ -351,19 +376,22 @@ struct FFIGenImpl
             if (isCpp)
             {
                 // how will item know it is fn struct
-                typedef ITEM::ARGS method_args_list;
+                typedef typename ITEM::Args method_args_list;
 
-                typedef typename method_args_list::template PopFront<>::type inner_args_list;
-                typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
-
+                //  typedef typename method_args_list::template PopFront<>::type inner_args_list;
+                // typedef typename inner_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+                typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+                typedef typename outter_args_list::template PopFront<CONTEXT *>::type inner_args_list;
                 std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
                 std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
 
-                std::string resultType = ITEM::Result;
+                // its blank
+                std::cout << "arg list: " << arg_list << std::endl;
+                std::string resultType = container::repr::type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
                 gen_file << "extern \"C\" "
-                         << resultType << " " << generated_func_name << "(" << header << ")"
+                         << resultType << " " << mangle_func_name << "(" << header << ")"
                          << "{"
                          << std::endl
                          << "\t"
@@ -376,19 +404,41 @@ struct FFIGenImpl
                          << traitName
                          << ", "
                          << container::repr::type_name<CONTEXT>()
-                         << ">::StaticTable::call<"
+                         << ">::STable::template call<typename "
                          << reg_str_func_name
-                         << ">(&as<"
+                         << ">(&(as<"
                          << traitName
-                         << ">(ptr), "
-                         << inner_args_list
+                         << ">(*ptr)), "
+                         << arg_list
                          << ");"
                          << std::endl
                          << "}"
                          << std::endl;
+                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file);
             }
             else
             {
+                typedef typename ITEM::Args method_args_list;
+                typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+
+                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
+
+                std::string resultType = container::repr::type_name<typename ITEM::Result>();
+                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
+
+                std::cout << "writing to the cffi.h" << std::endl;
+                gen_file << "extern \"C\" "
+                         << resultType
+                         << " "
+                         << mangle_func_name
+                         << "("
+                         << header
+                         << ")"
+                         << ";"
+                         << std::endl;
+                std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
+                // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
+                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file);
             }
         }
     };
@@ -461,6 +511,7 @@ struct FFIGenImpl
             std::string str_head_type = container::repr::type_name<HEAD>();
             std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType);
 
+            std::cout << "index: " << index << "-> " << str_head_type << std::endl;
             std::string total_param_list = "";
             if (includeType)
             {

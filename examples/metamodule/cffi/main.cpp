@@ -1,6 +1,4 @@
-#include <thread>
-#include "../../../include/include.h"
-#include <functional>
+
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -33,6 +31,8 @@ int main()
         container::TypeSet<
             TraitA,
             TraitB,
+            Alloc,
+            FFIEntry<Alloc>,
             FFIEntry<TraitA>,
             FFIEntry<TraitB>,
             FFIGen>,
