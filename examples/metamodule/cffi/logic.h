@@ -92,9 +92,13 @@ struct TraitA
     struct AFn
     {
     };
+    struct AGetStr
+    {
+    };
     typedef StaticTable<
         // container::Binding<AConstruct, (this) * ()>,
-        container::Binding<AFn, void *(int, bool)>>
+        container::Binding<AFn, void *(int, bool)>,
+        container::Binding<AGetStr, std::string *()>>
         STable;
 };
 
@@ -125,12 +129,18 @@ struct Alloc
 template <typename CONTEXT>
 struct AllocImpl
 {
+    size_t mult;
+    AllocImpl()
+    {
+        mult = 2;
+    }
     void *alloc_fun_impl(size_t size)
     {
-        return malloc(size);
+        return malloc(size * mult);
     }
     void free_fun_impl(void *ptr)
     {
+        std::cout << "Freeing " << ptr << std::endl;
         return free(ptr);
     }
 
@@ -156,10 +166,15 @@ using AllocModule = context::SimpleModule<
 template <typename CONTEXT>
 struct BImpl
 {
+    int y;
+    BImpl()
+    {
+        y = 10;
+    }
     float fn(double x)
     {
         std::cout << "entered trait b and will multiplying input by 3" << std::endl;
-        float returnVal = x * 3.0;
+        float returnVal = x * y;
         return returnVal;
     }
     typedef StaticTable<
@@ -181,6 +196,10 @@ struct AImpl
     {
         member = "test member";
     }
+    std::string retStr()
+    {
+        return member;
+    }
     void fn(int x, bool y)
     {
         std::cout << "member: " << member << std::endl;
@@ -195,7 +214,8 @@ struct AImpl
     }
     typedef StaticTable<
         container::Binding<
-            TraitA::AFn, Fn<&AImpl<CONTEXT>::fn>>>
+            TraitA::AFn, Fn<&AImpl<CONTEXT>::fn>>,
+        container::Binding<TraitA::AGetStr, Fn<&AImpl<CONTEXT>::retStr>>>
         STable;
 
     /*
@@ -371,6 +391,7 @@ struct FFIGenImpl
         static void exec(bool isCpp, std::string traitName, std::fstream &gen_file)
         {
             std::string mangle_func_name = typeid(KEY).name();
+            std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
             std::string reg_str_func_name = container::repr::type_name<KEY>();
 
             if (isCpp)
@@ -391,7 +412,7 @@ struct FFIGenImpl
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
                 gen_file << "extern \"C\" "
-                         << resultType << " " << mangle_func_name << "(" << header << ")"
+                         << resultType << " " << typemagic_mangle_name << "(" << header << ")"
                          << "{"
                          << std::endl
                          << "\t"
@@ -407,11 +428,18 @@ struct FFIGenImpl
                          << ">::STable::template call<typename "
                          << reg_str_func_name
                          << ">(&(as<"
-                         << traitName
-                         << ">(*ptr)), "
-                         << arg_list
-                         << ");"
-                         << std::endl
+                         << traitName;
+                if (arg_list.size() == 0)
+                {
+                    gen_file << ">(*ptr)));";
+                }
+                else
+                {
+                    gen_file << ">(*ptr)), "
+                             << arg_list
+                             << ");";
+                }
+                gen_file << std::endl
                          << "}"
                          << std::endl;
                 ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file);
@@ -430,7 +458,7 @@ struct FFIGenImpl
                 gen_file << "extern \"C\" "
                          << resultType
                          << " "
-                         << mangle_func_name
+                         << typemagic_mangle_name
                          << "("
                          << header
                          << ")"
@@ -458,6 +486,27 @@ struct FFIGenImpl
                      << std::endl
                      << "}"
                      << std::endl;
+        }
+        else
+        {
+            gen_file << ";"
+                     << std::endl;
+        }
+    }
+
+    void addDestructor(std::fstream &gen_file, bool isCpp)
+    {
+        gen_file << "extern \"C\" void destructor(void* ptr)";
+        if (isCpp)
+        {
+            gen_file << "{"
+                     << std::endl
+                     << container::repr::type_name<CONTEXT>()
+                     << "*ptr_to_delete = ("
+                     << container::repr::type_name<CONTEXT>()
+                     << "*) ptr;"
+                     << "\treturn delete ptr_to_delete;"
+                     << "}";
         }
         else
         {
@@ -607,6 +656,7 @@ struct FFIGenImpl
         addConstructor(header_file, false);
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFISet; // get every FFI specialization
         addFunctionGenRecurse<FFISet>(header_file, false);
+        addDestructor(header_file, false);
     }
 
     void addFunctionBody(std::fstream &cpp_file)
@@ -618,6 +668,7 @@ struct FFIGenImpl
         addConstructor(cpp_file, true);
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
         addFunctionGenRecurse<FFICppSet>(cpp_file, true);
+        addDestructor(cpp_file, true);
     }
 
     /*
