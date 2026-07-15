@@ -1,0 +1,9 @@
+{
+   numba_llvm_leaks
+   Memcheck:Leak
+   fun:malloc
+   fun:PyObject_Malloc
+   fun:LLVMContextCreate
+   fun:llvmlite*
+   fun:numba*
+}
