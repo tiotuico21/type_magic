@@ -278,6 +278,7 @@ struct FFIGenImpl
         // why fPIC smthn about address reolacation
         char *args[] = {
             (char *)"g++",
+            (char *)"-g",
             (char *)"-std=c++20",
             (char *)"-shared",
             (char *)"-fPIC",
