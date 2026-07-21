@@ -13,3 +13,8 @@ class TypeMagicFInder(importlib.abc.MetaPathFinder):
                 TypeMagicLoader()
             )
         return None
+class TypeMagicLoader(importlib.abc.Loader):
+    def exec_modules(self, module):
+        print("creating type_magic contents")
+
+        

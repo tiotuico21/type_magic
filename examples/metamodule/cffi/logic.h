@@ -17,6 +17,101 @@
 
 // value
 
+#include <unordered_map>
+#include <string>
+#include <stdexcept>
+
+#include <unordered_map>
+#include <string>
+#include <stdexcept>
+
+std::vector<std::string> extern_func_headers = {
+    "def construct():",
+    "def destruct(ptr):",
+    "def alloc_bytes(ptr, arg1):",
+    "def free_bytes(ptr, arg1):",
+    "def trait_a_fn(ptr, arg1, arg2):",
+    "def ret_str(ptr):",
+    "def trait_b_fn(ptr, arg1):",
+};
+
+std::vector<std::string> extern_linker_headers = {};
+
+std::vector<std::string> extern_func_param = {"", "ptr", "ptr, arg1", "ptr, arg1", "ptr, arg1, arg2", "ptr", "ptr, arg1"};
+std::string static cppToNumbaType(std::string cppType)
+{
+    static const std::unordered_map<std::string, std::string> typeMap = {
+        {"bool", "types.boolean"},
+
+        {"char", "types.int8"},
+        {"signed char", "types.int8"},
+        {"unsigned char", "types.uint8"},
+
+        {"short", "types.int16"},
+        {"unsigned short", "types.uint16"},
+
+        {"int", "types.int32"},
+        {"unsigned", "types.uint32"},
+        {"unsigned int", "types.uint32"},
+
+        {"long", "types.int64"},
+        {"unsigned long", "types.uint64"},
+
+        {"long long", "types.int64"},
+        {"unsigned long long", "types.uint64"},
+
+        {"int8_t", "types.int8"},
+        {"uint8_t", "types.uint8"},
+        {"int16_t", "types.int16"},
+        {"uint16_t", "types.uint16"},
+        {"int32_t", "types.int32"},
+        {"uint32_t", "types.uint32"},
+        {"int64_t", "types.int64"},
+        {"uint64_t", "types.uint64"},
+
+        {"float", "types.float32"},
+        {"double", "types.float64"},
+        {"std::string",
+         "CPointer(types.int8)"},
+        {"std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >",
+         "CPointer(types.int8)"},
+        {"void", "types.void"}};
+
+    // Remove trailing whitespace
+    while (!cppType.empty() && std::isspace(cppType.back()))
+        cppType.pop_back();
+
+    int pointerDepth = 0;
+
+    // Count trailing '*'
+    while (!cppType.empty() && cppType.back() == '*')
+    {
+        ++pointerDepth;
+        cppType.pop_back();
+
+        while (!cppType.empty() && std::isspace(cppType.back()))
+            cppType.pop_back();
+    }
+
+    // Special case: void*
+    if (cppType == "void" && pointerDepth == 1)
+        return "types.voidptr";
+
+    auto it = typeMap.find(cppType);
+
+    if (it == typeMap.end())
+        throw std::runtime_error("Unknown C++ type: " + cppType);
+
+    std::string result = it->second;
+
+    for (int i = 0; i < pointerDepth; ++i)
+    {
+        result = "types.CPointer(" + result + ")";
+    }
+
+    return result;
+}
+
 template <auto... THING>
 struct Fn
 {
@@ -268,12 +363,44 @@ struct FFIGenImpl
     {
         std::fstream header_file;
         std::fstream cpp_file;
+        std::fstream python_file;
         header_file.open("cffi.h", std::ios::trunc | std::ios::out);
         cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
-        addFunctionHeaders(header_file, client_logic_header_file);
-        addFunctionBody(cpp_file);
+        python_file.open("test_ffi.py", std::ios::trunc | std::ios::out);
+
+        python_file << "import re\n"
+                    << "import sys\n"
+                    << "import numba\n"
+                    << "import inspect\n"
+                    << "import subprocess\n"
+                    << "\n"
+                    << "from llvmlite import binding\n"
+                    << "\n"
+                    << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n";
+
+        /*
+        import re
+import sys
+import numba
+import inspect
+import subprocess
+
+from llvmlite import binding
+
+binding.load_library_permanently("../my_dynamic_library.so")
+        */
+        addFunctionHeaders(header_file, python_file, client_logic_header_file);
+        addFunctionBody(cpp_file, python_file);
         header_file.close();
         cpp_file.close();
+
+        for (size_t i = 0; i < extern_func_headers.size(); ++i)
+        {
+            python_file << "@numba.njit\n";
+            python_file << extern_func_headers[i] << "\n\t"
+                        << "return " << extern_linker_headers[i] << "(" << extern_func_param[i] << ")\n\n";
+        }
+        python_file.close();
 
         // why fPIC smthn about address reolacation
         char *args[] = {
@@ -290,7 +417,7 @@ struct FFIGenImpl
     }
 
     template <typename T>
-    void addFunctionGenRecurse(std::fstream &gen_file, bool isCpp)
+    void addFunctionGenRecurse(std::fstream &gen_file, std::fstream &python_file, bool isCpp)
     {
         if constexpr (std::is_same<T, container::TypeSet<>>::value)
         {
@@ -324,8 +451,8 @@ struct FFIGenImpl
             std::string func_sig = container::repr::type_name<CONTEXT>(); //
             if (isCpp)
             {
-                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file);
-                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
+                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file, python_file);
+                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, python_file, isCpp);
             }
             else
             {
@@ -365,8 +492,8 @@ struct FFIGenImpl
                          << ";"
                          << std::endl;
                 */
-                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(false, trait_name, gen_file);
-                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, isCpp);
+                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(false, trait_name, gen_file, python_file);
+                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, python_file, false);
             }
         }
     }
@@ -378,7 +505,7 @@ struct FFIGenImpl
     struct ReadEveryFunction<container::TypeMap<TAIL...>>
     {
 
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file)
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, int func_index = 0)
         {
             std::cout << "i am going into the base case of readComponentFunctions" << std::endl;
             return;
@@ -388,11 +515,13 @@ struct FFIGenImpl
     template <typename KEY, typename ITEM, typename... TAIL>
     struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
     {
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file)
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, int func_index = 0)
         {
             std::string mangle_func_name = typeid(KEY).name();
             std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
             std::string reg_str_func_name = container::repr::type_name<KEY>();
+
+            std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
 
             if (isCpp)
             {
@@ -411,6 +540,27 @@ struct FFIGenImpl
                 std::string resultType = container::repr::type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
+                /*
+                extern_trait_a_fn = numba.types.ExternalFunction(
+    "_TYPEMAGICN6TraitA3AFnE",
+    numba.core.typing.signature(
+        numba.types.void,
+        numba.types.voidptr,
+        numba.types.int32,
+        numba.types.bool #boolean?????
+    )
+)
+                */
+                std::string extern_function_return_type = "numba." + cppToNumbaType(resultType);
+                std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
+                python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
+                            << typemagic_mangle_name
+                            << "\",\n\tnumba.core.typing.signature(\n\t\t"
+                            << extern_function_return_type
+                            << ",\n\t\t"
+                            << extern_function_param_list
+                            << "\n\t)\n)\n\n";
+                extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
                 gen_file << "extern \"C\" "
                          << resultType << " " << typemagic_mangle_name << "(" << header << ")"
                          << "{"
@@ -442,7 +592,7 @@ struct FFIGenImpl
                 gen_file << std::endl
                          << "}"
                          << std::endl;
-                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file);
+                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, func_index + 1);
             }
             else
             {
@@ -466,13 +616,20 @@ struct FFIGenImpl
                          << std::endl;
                 std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
                 // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
-                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file);
+                ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, func_index + 1);
             }
         }
     };
 
-    void addConstructor(std::fstream &gen_file, bool isCpp)
+    void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp)
     {
+
+        if (extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct")
+        {
+            python_file << "extern_contruct = numba.types.ExternalFunction(\n\t\"construct\",\n\tnumba.core.typing.signature(\n\t\tnumba.types.voidptr\n\t)\n)\n\n";
+            extern_linker_headers.push_back("extern_construct");
+        }
+
         gen_file << "extern \"C\" void* construct()";
 
         // container::repr::type_name<CONTEXT>()
@@ -494,8 +651,14 @@ struct FFIGenImpl
         }
     }
 
-    void addDestructor(std::fstream &gen_file, bool isCpp)
+    void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp)
     {
+
+        if (extern_linker_headers.size() == 0 || extern_linker_headers[1] != "extern_destruct")
+        {
+            python_file << "extern_destruct = numba.types.ExternalFunction(\n\t\"destruct\",\n\tnumba.core.typing.signature(\n\t\tnumba.types.void,\n\t\tnumba.types.voidptr\n\t)\n)\n\n";
+            extern_linker_headers.push_back("extern_destruct");
+        }
         gen_file << "extern \"C\" void destructor(void* ptr)";
         if (isCpp)
         {
@@ -515,19 +678,22 @@ struct FFIGenImpl
         }
     }
 
-    std::string toSnakeCase(std::string &trait_name)
+    static std::string toSnakeCase(std::string &trait_name)
     {
         std::string snake_case_trait_name;
 
         for (size_t i = 0; i < trait_name.size(); i++)
         {
-            if (std::isupper(static_cast<unsigned char>(trait_name[i])))
+            if (std::isupper(static_cast<unsigned char>(trait_name[i])) || static_cast<unsigned char>(trait_name[i]) == ':')
             {
                 if (i != 0)
                 {
                     snake_case_trait_name += '_';
                 }
-                snake_case_trait_name += std::tolower(static_cast<unsigned char>(trait_name[i]));
+                if (static_cast<unsigned char>(trait_name[i]) != ':')
+                {
+                    snake_case_trait_name += std::tolower(static_cast<unsigned char>(trait_name[i]));
+                }
             }
             else
             {
@@ -544,7 +710,7 @@ struct FFIGenImpl
     template <typename... TAIL>
     struct ParamListToString<container::TypeArray<TAIL...>>
     {
-        static std::string makeString(int index, bool includeType)
+        static std::string makeString(int index, bool includeType, bool forPython = false)
         {
             std::cout << "i am going into the base case" << std::endl;
             return "";
@@ -554,14 +720,27 @@ struct FFIGenImpl
     template <typename HEAD, typename... TAIL>
     struct ParamListToString<container::TypeArray<HEAD, TAIL...>>
     {
-        static std::string makeString(int index, bool includeType)
+        static std::string makeString(int index, bool includeType, bool forPython = false)
         {
             std::cout << "i am going into the recursive case" << std::endl;
             std::string str_head_type = container::repr::type_name<HEAD>();
-            std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType);
+
+            std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType, forPython);
 
             std::cout << "index: " << index << "-> " << str_head_type << std::endl;
             std::string total_param_list = "";
+            if (forPython)
+            {
+                std::string current =
+                    (index == 0)
+                        ? "numba." + cppToNumbaType("void*")
+                        : "numba." + cppToNumbaType(str_head_type);
+
+                if (str_types_from_tail.empty())
+                    return current;
+
+                return current + ", " + str_types_from_tail;
+            }
             if (includeType)
             {
                 if (index == 0)
@@ -631,7 +810,7 @@ struct FFIGenImpl
 
     // idk if we need his as its a template , i feel like i need to wire smthn so that we js filter for FFI
 
-    void addFunctionHeaders(std::fstream &header_file, std::string client_header)
+    void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header)
     {
         /*
         #include <thread>
@@ -653,22 +832,22 @@ struct FFIGenImpl
                     << "#include \"" << client_header << "\""
                     << std::endl;
 
-        addConstructor(header_file, false);
+        addConstructor(header_file, python_file, false);
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFISet; // get every FFI specialization
-        addFunctionGenRecurse<FFISet>(header_file, false);
-        addDestructor(header_file, false);
+        addFunctionGenRecurse<FFISet>(header_file, python_file, false);
+        addDestructor(header_file, python_file, false);
     }
 
-    void addFunctionBody(std::fstream &cpp_file)
+    void addFunctionBody(std::fstream &cpp_file, std::fstream &python_file)
     {
         std::cout << "adding function body" << std::endl;
         cpp_file << "#include \"cffi.h\""
                  << std::endl
                  << std::endl;
-        addConstructor(cpp_file, true);
+        addConstructor(cpp_file, python_file, true);
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
-        addFunctionGenRecurse<FFICppSet>(cpp_file, true);
-        addDestructor(cpp_file, true);
+        addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true);
+        addDestructor(cpp_file, python_file, true);
     }
 
     /*

@@ -1,29 +1,26 @@
 #include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include "logic.h"
 
-extern "C" int _ZN8__main__8multiplyB2v1B52c8tJTIcFKzyF2ILShI4CrgQElUakCCQB1FiGSRRB9GgCAA_3d_3dEdd(
-    double *result,
-    void *exc_info,
-    double x,
-    double y);
+using RootModule = context::ModuleBundle<AddOne, AddIt>;
+
+template <typename CTX>
+void run()
+{
+	if constexpr (CTX::Info::SATISFIED){
+		CTX ctx{};
+		as<FFIGen>(ctx).genffi("logic.h");
+	}
+}
 
 int main()
 {
-    double result;
+	typedef typename context::CreateContextType<
+		RootModule,
+		container::TypeSet<AddOne, AddIt, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIGen>,
+		Meta<context::EagerSolve>>::type Ctx;
 
-    _ZN8__main__8multiplyB2v1B52c8tJTIcFKzyF2ILShI4CrgQElUakCCQB1FiGSRRB9GgCAA_3d_3dEdd(
-        &result,
-        nullptr,
-        2.0,
-        3.0);
-
-    std::cout << result << "\n";
+	run<Ctx>();
+	return 0;
 }
-
-/*
-saying dont mangle the name with extern c
-DOUBLE *RESULT FOR MOVSD %XMM0, (%RD1) which essentially saying
-storing th e result in mem pointed by rd1
-//so need a pointer for return result
-then nullptr is for exception handling but we never throw exception so stays nullptr
-//call the linker symbol of _zna_main
-*/
