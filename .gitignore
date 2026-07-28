@@ -1,6 +1,8 @@
+*.o
+*.so
 *.exe
 .vscode
 *.pdb
 *.swp
 *.log
-
+*.json
