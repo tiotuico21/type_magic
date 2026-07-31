@@ -1,26 +1,47 @@
+
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOne, AddIt>;
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, FFIGenModule>;
 
 template <typename CTX>
 void run()
 {
-	if constexpr (CTX::Info::SATISFIED){
+	std::cout << "Entered run" << std::endl;
+
+	if constexpr (CTX::Info::SATISFIED)
+	{
+		std::cout << "Context satisfied" << std::endl;
+
 		CTX ctx{};
-		as<FFIGen>(ctx).genffi("logic.h");
+
+		std::cout << "Context created" << std::endl;
+
+		as<FFIGen>(ctx).genffi("logic.h", true);
+
+		std::cout << "FFI generated" << std::endl;
+	}
+	else
+	{
+		CTX ctx{};
+		std::cout << "Context not satisfied" << std::endl;
+		std::cout << as<context::ContextInfo>(ctx).error_string();
 	}
 }
-
+    
 int main()
 {
-	typedef typename context::CreateContextType<
-		RootModule,
-		container::TypeSet<AddOne, AddIt, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIGen>,
-		Meta<context::EagerSolve>>::type Ctx;
+    using namespace container;
+    using namespace context;
+    typedef TypeMap<Binding<key::RootModule, RootModule>> BaseInputState;
 
-	run<Ctx>();
-	return 0;
-}
+typedef typename BaseInputState
+    ::template SetItem<key::RequirementSet, 
+TypeSet<AddOne, AddIt, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIGen>
+			>::type StandardTraits;
+        run<typename context::CreateContextType<StandardTraits>::type>();
+        return 0;
+    }
+    
