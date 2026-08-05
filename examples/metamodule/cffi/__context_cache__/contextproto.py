@@ -108,11 +108,8 @@ static std::string get_type_name(){
     int typeIndex = voidPRETTY.find("void");
 
     int difference = ourPRETTY.length() - voidPRETTY.length();
+
     int totalLength = difference + 4;
-    std::cout << "We have entered the get type name method" << std::endl;
-    std::cout << "________________________________________" << std::endl;
-    std::cout << ourPRETTY.substr(typeIndex, totalLength) << std::endl;
-    std::cout << "________________________________________" << std::endl;
 
     return ourPRETTY.substr(typeIndex, totalLength);
 
@@ -149,8 +146,7 @@ static std::string get_type_name(){
 
         for (size_t i = 0; i < extern_func_headers.size(); ++i)
         {
-            std::cout << extern_func_headers[i] << extern_linker_headers[i] << extern_func_param[i] << std::endl;
-            python_file << "@numba.njit\n";
+            python_file << "@numba.njit(cache=False)\n";
             python_file << extern_func_headers[i] << "\n\t"
                         << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
         }
@@ -174,7 +170,6 @@ static std::string get_type_name(){
     {
         if constexpr (std::is_same<T, container::TypeSet<>>::value)
         {
-            std::cout << "all empty" << std::endl;
             return;
         }
         // why did i have to guard this with an else
@@ -184,7 +179,6 @@ static std::string get_type_name(){
             typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
             std::string typenameMangle = typeid(CurrTrait).name();
             std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
-            std::cout << generated_func_name << std::endl;
             std::string trait_name = get_type_name<CurrTrait>();
             std::string trait_name_snake_case = toSnakeCase(trait_name);
 
@@ -219,7 +213,6 @@ static std::string get_type_name(){
 
         static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
         {
-            std::cout << "i am going into the base case of readComponentFunctions" << std::endl;
             return;
         }
     };
@@ -244,7 +237,6 @@ static std::string get_type_name(){
                 std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
                 std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
 
-                std::cout << "arg list: " << arg_list << std::endl;
                 std::string resultType = get_type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
@@ -345,7 +337,6 @@ static std::string get_type_name(){
                 std::string resultType = get_type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
-                std::cout << "writing to the cffi.h" << std::endl;
                 if (is_for_CPU){
                     gen_file << "extern \"C\" "
                              << resultType
@@ -371,7 +362,6 @@ static std::string get_type_name(){
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 
-                std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
                 // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
             }
         }
@@ -549,7 +539,6 @@ static std::string get_type_name(){
     {
         static std::string makeString(int index, bool includeType, bool forPython = false)
         {
-            std::cout << "i am going into the base case" << std::endl;
             return "";
         }
     };
@@ -559,12 +548,12 @@ static std::string get_type_name(){
     {
         static std::string makeString(int index, bool includeType, bool forPython = false)
         {
-            std::cout << "i am going into the recursive case" << std::endl;
+            // std::cout << "i am going into the recursive case" << std::endl;
             std::string str_head_type = get_type_name<HEAD>();
 
             std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType, forPython);
 
-            std::cout << "index: " << index << "-> " << str_head_type << std::endl;
+            // std::cout << "index: " << index << "-> " << str_head_type << std::endl;
             std::string total_param_list = "";
             if (forPython)
             {
@@ -679,7 +668,7 @@ static std::string get_type_name(){
 
     void addFunctionBody(std::fstream &cpp_file, std::fstream &python_file, bool is_for_CPU)
     {
-        std::cout << "adding function body" << std::endl;
+        //std::cout << "adding function body" << std::endl;
         cpp_file << "#include \"cffi.h\""
                  << std::endl
                  << std::endl;
@@ -738,15 +727,15 @@ using RootModule = context::ModuleBundle<AddOneModule, AddItModule, FFIGenModule
 template <typename CTX>
 void run()
 {
-	std::cout << "Entered run" << std::endl;
+	// std::cout << "Entered run" << std::endl;
 
 	if constexpr (CTX::Info::SATISFIED)
 	{
-		std::cout << "Context satisfied" << std::endl;
+		//std::cout << "Context satisfied" << std::endl;
 
 		CTX ctx{};
 
-		std::cout << "Context created" << std::endl;
+		//std::cout << "Context created" << std::endl;
 
 		as<FFIGen>(ctx).genffi("logic.h", __IS_FOR_CPU__);
 
@@ -1203,9 +1192,13 @@ class ApyGenerator:
 '''
 def add_one(ctx: CONTEXT, arg1: int, arg2: str, arg3: bool) -> int:
     return arg1 + 1
-
 '''
+@numba.njit()
+def my_print(value: int):
+    print(value)
+
 def add_one(ctx: CONTEXT, arg1: int, arg2: bool) -> int:
+    my_print(arg1)
     if (arg2):
         return arg1 + 1
     return 0
@@ -1329,19 +1322,23 @@ def modify_llvm_func_name(fn):
         llvm_contents = f.read()
     #dont use ^ and $ bc thinks it has to end with that
     #search instead of match
-    pattern = re.compile(r"_ZN8__main__[0-9]([A-Za-z_][A-Za-z0-9_]*)[^(]+")
+    pattern =  r'cfunc._ZN8__main__(?!.*8my_print)\d+[A-Za-z_][A-Za-z0-9_]*B[^\s,(]*'
     match = re.search(pattern, llvm_contents)
 
+    if (match is None):
+        print(f"No match found for function {fn.__name__} in LLVM IR.")
+        return
     new_llvm_contents = llvm_contents[:match.start()] + fn.__name__ + llvm_contents[match.end():]
 
     with open(f"{fn.__name__}.ll", "w") as f:
         f.write(new_llvm_contents)
 
-def need_to_modify_llvm(fn):
-    with open(f"{fn.__name__}.ll") as f:
+def need_to_modify_llvm(fn, fn_name):
+    with open(f"{fn_name}.ll") as f:
             llvm_contents = f.read()
-    pattern = re.compile(r"_ZN8__main__[0-9]([A-Za-z_][A-Za-z0-9_]*)[^(]+")
+    pattern = r'cfunc._ZN8__main__(?!.*8my_print)\d+[A-Za-z_][A-Za-z0-9_]*B[^\s,(]*'
     match = re.search(pattern, llvm_contents)
+    print(match)
     return match
     
 def make_cpp_dict(fn_list):
@@ -1354,15 +1351,17 @@ def make_cpp_dict(fn_list):
         cpp_dict["RequiredTraits"].append(UtilStrings.to_pascal_case(item.__name__))
         param_list = AnnotationGetter.get_python_param_types(item)
         signature = AnnotationGetter.make_numba_signature(item, param_list)
-        numba_fn = numba.njit(item)
-        numba_fn.compile(signature)
-        llvm_ir = numba_fn.inspect_llvm(numba_fn.signatures[0])
+        print("*****************")
+        print(item.__name__)
+        numba_fn = numba.cfunc(signature)(item)
+        #numba_fn.compile(signature)
+        llvm_ir = numba_fn.inspect_llvm()
         with open(f"{item.__name__}.ll", "w") as f:
             f.write(llvm_ir)
 
         cpp_dict["LL_Files"].append(f"{item.__name__}.ll")
-        while (need_to_modify_llvm(item) != None):
-            modify_llvm_func_name(item)
+        while (need_to_modify_llvm(item, item.__name__) != None):
+           modify_llvm_func_name(item)
 
     print(cpp_dict)
     print(cpp_dict["LL_Files"])
@@ -1418,6 +1417,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
     result = subprocess.run(
         [
             "g++",
+            "-static",
             "-std=c++20",
             main_file_name,
             "-o",
@@ -1442,7 +1442,8 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
 
     result = subprocess.run(
         [
-            "clang++",
+            "clang-22",
+            "-static-libstdc++",
             "-std=c++20",
             "-shared",
             "-fPIC",

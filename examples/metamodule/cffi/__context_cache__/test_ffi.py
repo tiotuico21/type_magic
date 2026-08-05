@@ -35,19 +35,19 @@ extern_add_it___call_fn = numba.types.ExternalFunction(
 	)
 )
 
-@numba.njit
+@numba.njit(cache=False)
 def construct():
 	return extern_construct()
 
-@numba.njit
+@numba.njit(cache=False)
 def destruct(ptr):
 	return extern_destruct(ptr)
 
-@numba.njit
+@numba.njit(cache=False)
 def add_one(ptr, arg1, arg2):
 	return extern_add_one___call_fn(ptr, arg1, arg2)
 
-@numba.njit
+@numba.njit(cache=False)
 def add_it(ptr):
 	return extern_add_it___call_fn(ptr)
 

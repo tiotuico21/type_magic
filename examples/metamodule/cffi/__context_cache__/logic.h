@@ -31,11 +31,8 @@ static std::string get_type_name(){
     int typeIndex = voidPRETTY.find("void");
 
     int difference = ourPRETTY.length() - voidPRETTY.length();
+
     int totalLength = difference + 4;
-    std::cout << "We have entered the get type name method" << std::endl;
-    std::cout << "________________________________________" << std::endl;
-    std::cout << ourPRETTY.substr(typeIndex, totalLength) << std::endl;
-    std::cout << "________________________________________" << std::endl;
 
     return ourPRETTY.substr(typeIndex, totalLength);
 
@@ -296,8 +293,7 @@ struct FFIGenImpl{
 
         for (size_t i = 0; i < extern_func_headers.size(); ++i)
         {
-            std::cout << extern_func_headers[i] << extern_linker_headers[i] << extern_func_param[i] << std::endl;
-            python_file << "@numba.njit\n";
+            python_file << "@numba.njit(cache=False)\n";
             python_file << extern_func_headers[i] << "\n\t"
                         << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
         }
@@ -316,7 +312,6 @@ struct FFIGenImpl{
     {
         if constexpr (std::is_same<T, container::TypeSet<>>::value)
         {
-            std::cout << "all empty" << std::endl;
             return;
         }
         // why did i have to guard this with an else
@@ -326,7 +321,6 @@ struct FFIGenImpl{
             typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
             std::string typenameMangle = typeid(CurrTrait).name();
             std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
-            std::cout << generated_func_name << std::endl;
             std::string trait_name = get_type_name<CurrTrait>();
             std::string trait_name_snake_case = toSnakeCase(trait_name);
 
@@ -356,7 +350,6 @@ struct FFIGenImpl{
 
         static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
         {
-            std::cout << "i am going into the base case of readComponentFunctions" << std::endl;
             return;
         }
     };
@@ -381,7 +374,6 @@ struct FFIGenImpl{
                 std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
                 std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
 
-                std::cout << "arg list: " << arg_list << std::endl;
                 std::string resultType = get_type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
@@ -482,7 +474,6 @@ struct FFIGenImpl{
                 std::string resultType = get_type_name<typename ITEM::Result>();
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
-                std::cout << "writing to the cffi.h" << std::endl;
                 if (is_for_CPU){
                     gen_file << "extern \"C\" "
                              << resultType
@@ -508,7 +499,6 @@ struct FFIGenImpl{
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 
-                std::cout << "finished writing to the cffi.h with the new functrion gen function" << std::endl;
                 // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
             }
         }
@@ -667,7 +657,6 @@ struct FFIGenImpl{
     {
         static std::string makeString(int index, bool includeType, bool forPython = false)
         {
-            std::cout << "i am going into the base case" << std::endl;
             return "";
         }
     };
@@ -677,12 +666,12 @@ struct FFIGenImpl{
     {
         static std::string makeString(int index, bool includeType, bool forPython = false)
         {
-            std::cout << "i am going into the recursive case" << std::endl;
+            // std::cout << "i am going into the recursive case" << std::endl;
             std::string str_head_type = get_type_name<HEAD>();
 
             std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType, forPython);
 
-            std::cout << "index: " << index << "-> " << str_head_type << std::endl;
+            // std::cout << "index: " << index << "-> " << str_head_type << std::endl;
             std::string total_param_list = "";
             if (forPython)
             {
@@ -786,7 +775,7 @@ struct FFIGenImpl{
 
     void addFunctionBody(std::fstream &cpp_file, std::fstream &python_file, bool is_for_CPU)
     {
-        std::cout << "adding function body" << std::endl;
+        //std::cout << "adding function body" << std::endl;
         cpp_file << "#include \"cffi.h\""
                  << std::endl
                  << std::endl;

@@ -9,15 +9,15 @@ using RootModule = context::ModuleBundle<AddOneModule, AddItModule, FFIGenModule
 template <typename CTX>
 void run()
 {
-	std::cout << "Entered run" << std::endl;
+	// std::cout << "Entered run" << std::endl;
 
 	if constexpr (CTX::Info::SATISFIED)
 	{
-		std::cout << "Context satisfied" << std::endl;
+		//std::cout << "Context satisfied" << std::endl;
 
 		CTX ctx{};
 
-		std::cout << "Context created" << std::endl;
+		//std::cout << "Context created" << std::endl;
 
 		as<FFIGen>(ctx).genffi("logic.h", true);
 
