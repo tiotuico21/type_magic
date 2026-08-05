@@ -1,0 +1,178 @@
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 11:08:13 2026}: checkout: moving from 0375819cd2b7785e55de35edd6d15e0d8cbb56ec to CPlusToPythonFFI
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 11:07:18 2026}: checkout: moving from 033ce5743974fbb2a0fee2340f9c5f3029169286 to 0375819
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 11:04:55 2026}: checkout: moving from 0375819cd2b7785e55de35edd6d15e0d8cbb56ec to 033ce57
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 11:02:51 2026}: checkout: moving from c2c49250e9a1361f4da2c2414a7af6e4b7a5dd50 to 0375819
+[33mc2c4925[m[33m ([m[1;31morigin/CPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 11:01:51 2026}: checkout: moving from CPlusToPythonFFI-backup2 to c2c4925
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 11:00:31 2026}: checkout: moving from b19eb282988f9f0d36b84c863292b3e69daadb67 to CPlusToPythonFFI-backup2
+[33mb19eb28[m HEAD@{Tue Jul 28 10:56:12 2026}: checkout: moving from 0375819cd2b7785e55de35edd6d15e0d8cbb56ec to b19eb28
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 10:54:10 2026}: checkout: moving from CPlusToPythonFFI to 0375819
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:54:05 2026}: reset: moving to HEAD
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m refs/heads/CPlusToPythonFFI@{Tue Jul 28 10:47:24 2026}: reset: moving to 404f14d
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:47:24 2026}: reset: moving to 404f14d
+[33mc2c4925[m[33m ([m[1;31morigin/CPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:46:57 2026}: checkout: moving from CPlusToPythonFFI-backup2 to CPlusToPythonFFI
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 10:45:37 2026}: checkout: moving from CPlusToPythonFFI-backup to CPlusToPythonFFI-backup2
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 10:43:48 2026}: checkout: moving from CPlusToPythonFFI-backup2 to CPlusToPythonFFI-backup
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 10:43:09 2026}: checkout: moving from CPlusToPythonFFI to CPlusToPythonFFI-backup2
+[33mc2c4925[m[33m ([m[1;31morigin/CPlusToPythonFFI[m[33m)[m refs/remotes/origin/CPlusToPythonFFI@{Tue Jul 28 10:27:28 2026}: update by push
+[33mc2c4925[m[33m ([m[1;31morigin/CPlusToPythonFFI[m[33m)[m refs/heads/CPlusToPythonFFI@{Tue Jul 28 10:21:36 2026}: commit (merge): redid merge so it actually worked
+[33mc2c4925[m[33m ([m[1;31morigin/CPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:21:36 2026}: commit (merge): redid merge so it actually worked
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m refs/heads/CPlusToPythonFFI@{Tue Jul 28 10:14:40 2026}: reset: moving to be9fece^1
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:14:40 2026}: reset: moving to be9fece^1
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 10:14:32 2026}: checkout: moving from 404f14dc95b8da7a30e3fa0c716b25e290364c6d to CPlusToPythonFFI
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Tue Jul 28 10:12:44 2026}: checkout: moving from CPlusToPythonFFI to be9fece^1
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m refs/heads/CPlusToPythonFFI-backup2@{Tue Jul 28 10:09:59 2026}: branch: Created from CPlusToPythonFFI
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m refs/remotes/origin/CPlusToPythonFFI@{Tue Jul 28 10:09:14 2026}: update by push
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m refs/heads/CPlusToPythonFFI@{Tue Jul 28 10:09:05 2026}: commit: working on a main.cpp with transform
+[33m0375819[m[33m ([m[1;32mCPlusToPythonFFI-backup2[m[33m)[m HEAD@{Tue Jul 28 10:09:05 2026}: commit: working on a main.cpp with transform
+[33mb19eb28[m refs/remotes/origin/CPlusToPythonFFI@{Tue Jul 28 10:08:38 2026}: update by push
+[33mb19eb28[m refs/heads/CPlusToPythonFFI@{Tue Jul 28 10:08:10 2026}: commit: working on a main.cpp with transform
+[33mb19eb28[m HEAD@{Tue Jul 28 10:08:10 2026}: commit: working on a main.cpp with transform
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m refs/heads/CPlusToPythonFFI-backup@{Tue Jul 28 10:06:27 2026}: branch: Created from CPlusToPythonFFI
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 10:06:04 2026}: checkout: moving from be9feceaebc1c6b3e483b08de0d51b08b3eabaef to CPlusToPythonFFI
+[33mbe9fece[m HEAD@{Tue Jul 28 10:02:15 2026}: checkout: moving from 033ce5743974fbb2a0fee2340f9c5f3029169286 to be9fece
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 10:01:42 2026}: checkout: moving from CPlusToPythonFFI to 033ce57
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 10:01:24 2026}: reset: moving to HEAD
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 09:41:21 2026}: checkout: moving from main to CPlusToPythonFFI
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Tue Jul 28 09:27:45 2026}: checkout: moving from CPlusToPythonFFI to main
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Tue Jul 28 09:27:36 2026}: reset: moving to HEAD
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Mon Jul 27 16:22:56 2026}: checkout: moving from main to CPlusToPythonFFI
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Mon Jul 27 16:21:54 2026}: checkout: moving from CPlusToPythonFFI to main
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Mon Jul 27 16:21:50 2026}: reset: moving to HEAD
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Mon Jul 27 16:06:01 2026}: checkout: moving from main to CPlusToPythonFFI
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Mon Jul 27 16:04:54 2026}: checkout: moving from CPlusToPythonFFI to main
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Mon Jul 27 16:04:49 2026}: reset: moving to HEAD
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m refs/remotes/origin/CPlusToPythonFFI@{Mon Jul 27 13:32:24 2026}: update by push
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m refs/heads/CPlusToPythonFFI@{Mon Jul 27 13:32:10 2026}: commit: logic.h modified for prototyping how to write to a.py
+[33m033ce57[m[33m ([m[1;32mCPlusToPythonFFI-backup[m[33m)[m HEAD@{Mon Jul 27 13:32:10 2026}: commit: logic.h modified for prototyping how to write to a.py
+[33mbe9fece[m refs/heads/CPlusToPythonFFI@{Mon Jul 27 13:31:15 2026}: commit (merge): fixed merge issues for transform and committing code that can gen cffi.cpp cffi.h main.cpp a.py all from one python file. stil need to fix .ll files
+[33mbe9fece[m HEAD@{Mon Jul 27 13:31:15 2026}: commit (merge): fixed merge issues for transform and committing code that can gen cffi.cpp cffi.h main.cpp a.py all from one python file. stil need to fix .ll files
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Mon Jul 27 13:18:20 2026}: checkout: moving from main to CPlusToPythonFFI
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m refs/heads/main@{Mon Jul 27 13:17:25 2026}: pull upstream main: Fast-forward
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Mon Jul 27 13:17:25 2026}: pull upstream main: Fast-forward
+[33m1bb8bb5[m[33m ([m[1;31mupstream/main[m[33m, [m[1;32mmain[m[33m)[m refs/remotes/upstream/main@{Mon Jul 27 13:16:46 2026}: fetch upstream main: fast-forward
+[33m6f4893e[m HEAD@{Mon Jul 27 13:16:22 2026}: checkout: moving from CPlusToPythonFFI to main
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Mon Jul 27 13:16:15 2026}: reset: moving to HEAD
+[33mde639a8[m[33m ([m[1;35mrefs/stash[m[33m)[m refs/stash@{Mon Jul 27 13:16:12 2026}: WIP on CPlusToPythonFFI: 404f14d logic.h can gen a.py now js have to code my py file to gen the logic.h
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m refs/remotes/origin/CPlusToPythonFFI@{Mon Jul 20 17:37:45 2026}: update by push
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m refs/heads/CPlusToPythonFFI@{Mon Jul 20 17:37:31 2026}: commit: logic.h can gen a.py now js have to code my py file to gen the logic.h
+[33m404f14d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mCPlusToPythonFFI[m[33m)[m HEAD@{Mon Jul 20 17:37:31 2026}: commit: logic.h can gen a.py now js have to code my py file to gen the logic.h
+[33me3f7e86[m refs/remotes/origin/CPlusToPythonFFI@{Wed Jul 15 19:02:02 2026}: update by push
+[33me3f7e86[m refs/heads/CPlusToPythonFFI@{Wed Jul 15 19:01:48 2026}: commit: beginning the prototype for python generated traits into cpp file into cffi into so library back into callable nby python; finished writing code to writie into the equiv of logic.h
+[33me3f7e86[m HEAD@{Wed Jul 15 19:01:48 2026}: commit: beginning the prototype for python generated traits into cpp file into cffi into so library back into callable nby python; finished writing code to writie into the equiv of logic.h
+[33m9eaf135[m HEAD@{Wed Jul 15 14:28:06 2026}: checkout: moving from statictable to CPlusToPythonFFI
+[33mae0b855[m[33m ([m[1;31morigin/statictable[m[33m, [m[1;32mstatictable[m[33m)[m HEAD@{Wed Jul 15 11:13:40 2026}: checkout: moving from CPlusToPythonFFI to statictable
+[33m9eaf135[m HEAD@{Wed Jul 15 11:13:37 2026}: checkout: moving from statictable to CPlusToPythonFFI
+[33mae0b855[m[33m ([m[1;31morigin/statictable[m[33m, [m[1;32mstatictable[m[33m)[m HEAD@{Wed Jul 15 11:13:10 2026}: checkout: moving from CPlusToPythonFFI to statictable
+[33m9eaf135[m refs/remotes/origin/CPlusToPythonFFI@{Wed Jul 15 11:12:40 2026}: update by push
+[33m9eaf135[m refs/heads/CPlusToPythonFFI@{Wed Jul 15 11:12:07 2026}: commit: verifed i can run withou virtual env in python as before js did not use the new version globally out of fear it messed with my system but decided to js use the new one completely as have no porjects anyway that rely on the older python
+[33m9eaf135[m HEAD@{Wed Jul 15 11:12:07 2026}: commit: verifed i can run withou virtual env in python as before js did not use the new version globally out of fear it messed with my system but decided to js use the new one completely as have no porjects anyway that rely on the older python
+[33m16cf592[m refs/remotes/origin/CPlusToPythonFFI@{Tue Jul 14 17:34:44 2026}: update by push
+[33m16cf592[m HEAD@{Tue Jul 14 17:28:14 2026}: checkout: moving from statictable to CPlusToPythonFFI
+[33mae0b855[m[33m ([m[1;31morigin/statictable[m[33m, [m[1;32mstatictable[m[33m)[m refs/remotes/origin/statictable@{Tue Jul 14 17:03:22 2026}: update by push
+[33mae0b855[m[33m ([m[1;31morigin/statictable[m[33m, [m[1;32mstatictable[m[33m)[m refs/heads/statictable@{Tue Jul 14 17:03:15 2026}: commit: changes detected in logic.h that forgot to push
+[33mae0b855[m[33m ([m[1;31morigin/statictable[m[33m, [m[1;32mstatictable[m[33m)[m HEAD@{Tue Jul 14 17:03:15 2026}: commit: changes detected in logic.h that forgot to push
+[33m16cf592[m HEAD@{Tue Jul 14 17:01:26 2026}: checkout: moving from CPlusToPythonFFI to statictable
+[33m16cf592[m refs/heads/CPlusToPythonFFI@{Mon Jul 13 14:10:07 2026}: branch: Created from HEAD
+[33m16cf592[m HEAD@{Mon Jul 13 14:10:07 2026}: checkout: moving from statictable to CPlusToPythonFFI
+[33m16cf592[m refs/remotes/origin/statictable@{Mon Jul 13 13:42:37 2026}: update by push
+[33m16cf592[m refs/heads/statictable@{Mon Jul 13 13:42:17 2026}: commit: verified with testing refactoed cffi gen that can takr functions beyond fn does work enough beyond like special cases such as overloading etc
+[33m16cf592[m HEAD@{Mon Jul 13 13:42:17 2026}: commit: verified with testing refactoed cffi gen that can takr functions beyond fn does work enough beyond like special cases such as overloading etc
+[33me85d8e2[m refs/remotes/origin/statictable@{Thu Jul 9 17:13:16 2026}: update by push
+[33me85d8e2[m refs/heads/statictable@{Thu Jul 9 17:13:08 2026}: commit: finished untested generation of cffi files that do not depend on js functions with fn and can be reading all functions
+[33me85d8e2[m HEAD@{Thu Jul 9 17:13:08 2026}: commit: finished untested generation of cffi files that do not depend on js functions with fn and can be reading all functions
+[33m508743d[m HEAD@{Thu Jul 9 17:12:18 2026}: checkout: moving from main to statictable
+[33m6f4893e[m HEAD@{Thu Jul 9 17:11:33 2026}: checkout: moving from statictable to main
+[33m508743d[m HEAD@{Thu Jul 9 17:11:27 2026}: reset: moving to HEAD
+[33m508743d[m refs/remotes/origin/statictable@{Wed Jul 8 17:02:43 2026}: update by push
+[33m508743d[m refs/heads/statictable@{Wed Jul 8 17:02:15 2026}: commit: code in progress for the refactoring of having ffi gen work with any func name
+[33m508743d[m HEAD@{Wed Jul 8 17:02:15 2026}: commit: code in progress for the refactoring of having ffi gen work with any func name
+[33m8105ea6[m HEAD@{Wed Jul 8 13:21:03 2026}: checkout: moving from debug to statictable
+[33mdc26bce[m[33m ([m[1;31morigin/debug[m[33m, [m[1;32mdebug[m[33m)[m HEAD@{Wed Jul 8 13:21:00 2026}: checkout: moving from debug to debug
+[33mdc26bce[m[33m ([m[1;31morigin/debug[m[33m, [m[1;32mdebug[m[33m)[m refs/remotes/origin/debug@{Wed Jul 8 13:20:55 2026}: update by push
+[33mdc26bce[m[33m ([m[1;31morigin/debug[m[33m, [m[1;32mdebug[m[33m)[m refs/heads/debug@{Wed Jul 8 13:20:43 2026}: commit: fixed the mangling bc only was reading a string
+[33mdc26bce[m[33m ([m[1;31morigin/debug[m[33m, [m[1;32mdebug[m[33m)[m HEAD@{Wed Jul 8 13:20:43 2026}: commit: fixed the mangling bc only was reading a string
+[33m8105ea6[m HEAD@{Wed Jul 8 13:20:19 2026}: checkout: moving from statictable to debug
+[33m8105ea6[m HEAD@{Wed Jul 8 13:20:04 2026}: checkout: moving from debug to statictable
+[33m8105ea6[m HEAD@{Wed Jul 8 11:48:14 2026}: checkout: moving from statictable to debug
+[33m8105ea6[m HEAD@{Wed Jul 8 11:48:10 2026}: reset: moving to HEAD
+[33m8105ea6[m refs/heads/statictable@{Wed Jul 8 10:02:31 2026}: branch: Created from HEAD
+[33m8105ea6[m HEAD@{Wed Jul 8 10:02:31 2026}: checkout: moving from debug to statictable
+[33m8105ea6[m refs/remotes/origin/debug@{Wed Jul 8 10:01:59 2026}: update by push
+[33m8105ea6[m refs/heads/debug@{Wed Jul 8 10:01:48 2026}: commit: added mangling for function names
+[33m8105ea6[m HEAD@{Wed Jul 8 10:01:48 2026}: commit: added mangling for function names
+[33mda909f7[m refs/remotes/origin/debug@{Wed Jul 8 09:22:03 2026}: update by push
+[33mda909f7[m refs/heads/debug@{Wed Jul 8 09:20:48 2026}: commit: added code to create dynamic library obj file
+[33mda909f7[m HEAD@{Wed Jul 8 09:20:48 2026}: commit: added code to create dynamic library obj file
+[33md28b7ee[m HEAD@{Wed Jul 8 09:19:09 2026}: checkout: moving from main to debug
+[33m198a839[m[33m ([m[1;31mupstream/transform[m[33m)[m refs/remotes/upstream/transform@{Wed Jul 8 09:17:36 2026}: fetch upstream: fast-forward
+[33m6f4893e[m HEAD@{Wed Jul 8 09:17:22 2026}: checkout: moving from debug to main
+[33md28b7ee[m HEAD@{Wed Jul 8 09:17:15 2026}: reset: moving to HEAD
+[33md28b7ee[m refs/remotes/origin/debug@{Mon Jul 6 11:50:26 2026}: update by push
+[33md28b7ee[m refs/heads/debug@{Mon Jul 6 11:50:02 2026}: commit: made changes to begin implementing exec functionality to the ffi task
+[33md28b7ee[m HEAD@{Mon Jul 6 11:50:02 2026}: commit: made changes to begin implementing exec functionality to the ffi task
+[33m58e5eaa[m HEAD@{Mon Jul 6 11:49:23 2026}: checkout: moving from main to debug
+[33mf0b4477[m refs/remotes/upstream/transform@{Mon Jul 6 11:48:42 2026}: fetch upstream: fast-forward
+[33m6f4893e[m HEAD@{Mon Jul 6 11:47:24 2026}: checkout: moving from debug to main
+[33m58e5eaa[m HEAD@{Mon Jul 6 11:47:20 2026}: reset: moving to HEAD
+[33m58e5eaa[m refs/remotes/origin/debug@{Thu Jul 2 16:43:43 2026}: update by push
+[33m58e5eaa[m refs/heads/debug@{Thu Jul 2 16:41:41 2026}: commit: finished populating the cpp file with proof of conceptr of code
+[33m58e5eaa[m HEAD@{Thu Jul 2 16:41:41 2026}: commit: finished populating the cpp file with proof of conceptr of code
+[33m25a0930[m refs/heads/debug@{Thu Jul 2 16:40:56 2026}: merge main: Merge made by the 'ort' strategy.
+[33m25a0930[m HEAD@{Thu Jul 2 16:40:56 2026}: merge main: Merge made by the 'ort' strategy.
+[33m8d3627a[m HEAD@{Thu Jul 2 16:40:48 2026}: checkout: moving from main to debug
+[33m6f4893e[m refs/heads/main@{Thu Jul 2 16:40:30 2026}: pull upstream main: Fast-forward
+[33m6f4893e[m HEAD@{Thu Jul 2 16:40:30 2026}: pull upstream main: Fast-forward
+[33m6f4893e[m refs/remotes/upstream/main@{Thu Jul 2 16:39:56 2026}: fetch upstream: fast-forward
+[33mbfd2c80[m HEAD@{Thu Jul 2 16:39:40 2026}: checkout: moving from debug to main
+[33m8d3627a[m HEAD@{Thu Jul 2 16:39:29 2026}: reset: moving to HEAD
+[33m8d3627a[m refs/heads/debug@{Wed Jul 1 16:34:31 2026}: merge main: Merge made by the 'ort' strategy.
+[33m8d3627a[m HEAD@{Wed Jul 1 16:34:31 2026}: merge main: Merge made by the 'ort' strategy.
+[33mdabdb57[m HEAD@{Wed Jul 1 16:34:18 2026}: checkout: moving from main to debug
+[33mbfd2c80[m refs/heads/main@{Wed Jul 1 16:33:25 2026}: pull upstream main: Fast-forward
+[33mbfd2c80[m HEAD@{Wed Jul 1 16:33:25 2026}: pull upstream main: Fast-forward
+[33m20dfcb6[m[33m ([m[1;31mupstream/feature/init-construction[m[33m)[m refs/remotes/upstream/feature/init-construction@{Wed Jul 1 16:30:57 2026}: fetch upstream: storing head
+[33mbfd2c80[m refs/remotes/upstream/main@{Wed Jul 1 16:30:57 2026}: fetch upstream: fast-forward
+[33mb1a0d64[m refs/remotes/upstream/transform@{Wed Jul 1 16:30:57 2026}: fetch upstream: fast-forward
+[33m6882560[m HEAD@{Wed Jul 1 16:19:00 2026}: checkout: moving from debug to main
+[33mdabdb57[m HEAD@{Wed Jul 1 16:18:50 2026}: reset: moving to HEAD
+[33mdabdb57[m refs/remotes/origin/debug@{Wed Jul 1 12:22:40 2026}: update by push
+[33mdabdb57[m refs/heads/debug@{Wed Jul 1 12:22:27 2026}: commit: debugging the FFI file
+[33mdabdb57[m HEAD@{Wed Jul 1 12:22:27 2026}: commit: debugging the FFI file
+[33mde91614[m[33m ([m[1;32mFFI[m[33m)[m refs/heads/debug@{Wed Jul 1 12:21:54 2026}: branch: Created from HEAD
+[33mde91614[m[33m ([m[1;32mFFI[m[33m)[m HEAD@{Wed Jul 1 12:21:54 2026}: checkout: moving from FFI to debug
+[33mde91614[m[33m ([m[1;32mFFI[m[33m)[m refs/heads/FFI@{Tue Jun 30 13:22:47 2026}: merge main: Merge made by the 'ort' strategy.
+[33mde91614[m[33m ([m[1;32mFFI[m[33m)[m HEAD@{Tue Jun 30 13:22:47 2026}: merge main: Merge made by the 'ort' strategy.
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m HEAD@{Tue Jun 30 13:22:39 2026}: reset: moving to HEAD
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m HEAD@{Tue Jun 30 12:07:54 2026}: checkout: moving from main to FFI
+[33m6882560[m refs/heads/main@{Tue Jun 30 12:07:25 2026}: pull upstream main: Fast-forward
+[33m6882560[m HEAD@{Tue Jun 30 12:07:25 2026}: pull upstream main: Fast-forward
+[33m6882560[m refs/remotes/upstream/main@{Tue Jun 30 12:06:56 2026}: fetch upstream: fast-forward
+[33m0364937[m HEAD@{Tue Jun 30 12:05:54 2026}: checkout: moving from FFI to main
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m HEAD@{Tue Jun 30 12:05:42 2026}: reset: moving to HEAD
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m refs/remotes/origin/FFI@{Mon Jun 29 15:48:51 2026}: update by push
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m refs/heads/FFI@{Mon Jun 29 15:48:31 2026}: branch: Created from HEAD
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m HEAD@{Mon Jun 29 15:48:31 2026}: checkout: moving from SerDePractice to FFI
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m refs/heads/SerDePractice@{Mon Jun 29 15:47:41 2026}: commit (merge): Added files to fix merging
+[33m55f5b66[m[33m ([m[1;31morigin/FFI[m[33m, [m[1;32mSerDePractice[m[33m)[m HEAD@{Mon Jun 29 15:47:41 2026}: commit (merge): Added files to fix merging
+[33me033c76[m[33m ([m[1;31morigin/SerDePractice[m[33m)[m HEAD@{Mon Jun 29 10:15:56 2026}: checkout: moving from main to SerDePractice
+[33m0364937[m refs/heads/main@{Mon Jun 29 10:15:15 2026}: pull upstream main: Fast-forward
+[33m0364937[m HEAD@{Mon Jun 29 10:15:15 2026}: pull upstream main: Fast-forward
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{Mon Jun 29 10:13:47 2026}: checkout: moving from SerDePractice to main
+[33mb307080[m[33m ([m[1;31mupstream/exercise/starter[m[33m)[m refs/remotes/upstream/exercise/starter@{Mon Jun 29 10:12:48 2026}: fetch upstream: storing head
+[33m0364937[m refs/remotes/upstream/main@{Mon Jun 29 10:12:48 2026}: fetch upstream: storing head
+[33m6e1fae8[m[33m ([m[1;31mupstream/meta-module[m[33m)[m refs/remotes/upstream/meta-module@{Mon Jun 29 10:12:48 2026}: fetch upstream: storing head
+[33m9b0037c[m refs/remotes/upstream/transform@{Mon Jun 29 10:12:48 2026}: fetch upstream: storing head
+[33me033c76[m[33m ([m[1;31morigin/SerDePractice[m[33m)[m refs/remotes/origin/SerDePractice@{Wed Jun 17 17:18:17 2026}: update by push
+[33me033c76[m[33m ([m[1;31morigin/SerDePractice[m[33m)[m refs/heads/SerDePractice@{Wed Jun 17 17:15:59 2026}: commit: Practiced checkpoint exercise
+[33me033c76[m[33m ([m[1;31morigin/SerDePractice[m[33m)[m HEAD@{Wed Jun 17 17:15:59 2026}: commit: Practiced checkpoint exercise
+[33mb984eaa[m[33m ([m[1;31morigin/Practice[m[33m, [m[1;32mPractice[m[33m)[m refs/heads/SerDePractice@{Wed Jun 17 17:14:38 2026}: branch: Created from HEAD
+[33mb984eaa[m[33m ([m[1;31morigin/Practice[m[33m, [m[1;32mPractice[m[33m)[m HEAD@{Wed Jun 17 17:14:38 2026}: checkout: moving from Practice to SerDePractice
+[33me858945[m[33m ([m[1;31morigin/PracticeFileDescriptor[m[33m)[m refs/remotes/origin/PracticeFileDescriptor@{Wed Jun 17 09:19:41 2026}: pull: storing head
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m refs/remotes/origin/main@{Wed Jun 17 09:19:41 2026}: pull: storing head
+[33mb984eaa[m[33m ([m[1;31morigin/Practice[m[33m, [m[1;32mPractice[m[33m)[m refs/remotes/origin/Practice@{Tue Jun 16 13:42:13 2026}: update by push
+[33mb984eaa[m[33m ([m[1;31morigin/Practice[m[33m, [m[1;32mPractice[m[33m)[m refs/heads/Practice@{Tue Jun 16 13:37:59 2026}: commit: Practice using module.cpp
+[33mb984eaa[m[33m ([m[1;31morigin/Practice[m[33m, [m[1;32mPractice[m[33m)[m HEAD@{Tue Jun 16 13:37:59 2026}: commit: Practice using module.cpp
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m refs/heads/Practice@{Tue Jun 16 09:53:58 2026}: branch: Created from HEAD
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{Tue Jun 16 09:53:58 2026}: checkout: moving from main to Practice
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m refs/heads/main@{Tue Jun 16 09:44:31 2026}: clone: from https://github.com/braxtoncuneo/type_magic.git
+[33m558217c[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{Tue Jun 16 09:44:31 2026}: clone: from https://github.com/braxtoncuneo/type_magic.git

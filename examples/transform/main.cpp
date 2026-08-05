@@ -289,6 +289,26 @@ void run() {
 
 }
 
+template <typename TYPE>
+static std::string query(){
+    return __PRETTY_FUNCTION__;
+}
+
+template <typename TYPE>
+static std::string get_type_name(){
+    std::string voidPRETTY = query<void>();
+    std::string ourPRETTY = query<TYPE>();
+
+    int typeIndex = voidPRETTY.find("void");
+
+    int difference = ourPRETTY.length() - voidPRETTY.length();
+    int totalLength = difference + 4;
+
+    return ourPRETTY.substr(typeIndex, totalLength);
+
+}
+
+
 int main() {
 
     using namespace container;   
@@ -316,6 +336,27 @@ int main() {
     run<typename context::CreateContextType<ColoredFile>::type>();
     run<typename context::CreateContextType<StandardPrint>::type>();
     run<typename context::CreateContextType<ColoredPrint>::type>();
+
+
+    std::string voidPRETTY = query<void>();
+    std::string ourPRETTY = query<TraitImplMutex<LogStyle>>();
+
+    int index = voidPRETTY.find("void");
+
+     std::cout << index << std::endl;
+    int difference = ourPRETTY.length() - voidPRETTY.length(); //works
+
+    int totalLength = difference + 4;
+    std::cout << "hello" << std::endl;
+    std::cout << voidPRETTY << std::endl;
+    std::cout << ourPRETTY << std::endl;
+
+    std::cout << difference << std::endl;
+
+    std::cout << ourPRETTY.substr(index, totalLength) << std::endl;
+
+    std::cout << get_type_name<TraitImplMutex<LogStyle>>() << std::endl;
+
 
     return 0;
 }

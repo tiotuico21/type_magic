@@ -25,6 +25,30 @@
 #include <string>
 #include <stdexcept>
 
+
+template <typename TYPE>
+static std::string query(){
+    return __PRETTY_FUNCTION__;
+}
+
+template <typename TYPE>
+static std::string get_type_name(){
+    std::string voidPRETTY = query<void>();
+    std::string ourPRETTY = query<TYPE>();
+
+    int typeIndex = voidPRETTY.find("void");
+
+    int difference = ourPRETTY.length() - voidPRETTY.length();
+    int totalLength = difference + 4;
+    std::cout << "We have entered the get type name method" << std::endl;
+    std::cout << "________________________________________" << std::endl;
+    std::cout << ourPRETTY.substr(typeIndex, totalLength) << std::endl;
+    std::cout << "________________________________________" << std::endl;
+
+    return ourPRETTY.substr(typeIndex, totalLength);
+
+}
+
 std::vector<std::string> extern_func_headers = {
     "def construct():",
     "def destruct(ptr):",
@@ -432,7 +456,8 @@ binding.load_library_permanently("../my_dynamic_library.so")
             std::string typenameMangle = typeid(CurrTrait).name();
             std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
             std::cout << generated_func_name << std::endl;
-            std::string trait_name = container::repr::type_name<CurrTrait>();
+            std::string trait_name = get_type_name<CurrTrait>();
+
             std::string trait_name_snake_case = toSnakeCase(trait_name);
 
             // function sig
@@ -448,7 +473,8 @@ binding.load_library_permanently("../my_dynamic_library.so")
             // already know the Trait
             // typedef decltype(&sig_component::fn) method_pointer_sig;
 
-            std::string func_sig = container::repr::type_name<CONTEXT>(); //
+            //std::string func_sig = container::repr::type_name<CONTEXT>(); 
+            std::string func_sig = get_type_name<CONTEXT>();
             if (isCpp)
             {
                 ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file, python_file);
@@ -519,7 +545,8 @@ binding.load_library_permanently("../my_dynamic_library.so")
         {
             std::string mangle_func_name = typeid(KEY).name();
             std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
-            std::string reg_str_func_name = container::repr::type_name<KEY>();
+            //std::string reg_str_func_name = container::repr::type_name<KEY>();
+            std::string reg_str_func_name = get_type_name<KEY>();
 
             std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
 
@@ -553,6 +580,7 @@ binding.load_library_permanently("../my_dynamic_library.so")
                 */
                 std::string extern_function_return_type = "numba." + cppToNumbaType(resultType);
                 std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
+                python_file << "extern \"C\" __device__\n";
                 python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
                             << typemagic_mangle_name
                             << "\",\n\tnumba.core.typing.signature(\n\t\t"
@@ -566,15 +594,18 @@ binding.load_library_permanently("../my_dynamic_library.so")
                          << "{"
                          << std::endl
                          << "\t"
-                         << container::repr::type_name<CONTEXT>()
+                         //<< container::repr::type_name<CONTEXT>()
+                         << get_type_name<CONTEXT>()
                          << "* ptr = ("
-                         << container::repr::type_name<CONTEXT>()
+                       //  << container::repr::type_name<CONTEXT>()
+                         << get_type_name<CONTEXT>()
                          << "*) arg0;"
                          << std::endl
                          << "\treturn As<"
                          << traitName
                          << ", "
-                         << container::repr::type_name<CONTEXT>()
+                         //<< container::repr::type_name<CONTEXT>()
+                         << get_type_name<CONTEXT>()
                          << ">::STable::template call<typename "
                          << reg_str_func_name
                          << ">(&(as<"
@@ -638,7 +669,8 @@ binding.load_library_permanently("../my_dynamic_library.so")
             gen_file << "{"
                      << std::endl
                      << "\treturn (void*) new "
-                     << container::repr::type_name<CONTEXT>()
+                     //<< container::repr::type_name<CONTEXT>()
+                     << get_type_name<CONTEXT>()
                      << ";"
                      << std::endl
                      << "}"
@@ -664,9 +696,11 @@ binding.load_library_permanently("../my_dynamic_library.so")
         {
             gen_file << "{"
                      << std::endl
-                     << container::repr::type_name<CONTEXT>()
+                     //<< container::repr::type_name<CONTEXT>()
+                     << get_type_name<CONTEXT>()
                      << "*ptr_to_delete = ("
-                     << container::repr::type_name<CONTEXT>()
+                     //<< container::repr::type_name<CONTEXT>()
+                     << get_type_name<CONTEXT>()
                      << "*) ptr;"
                      << "\treturn delete ptr_to_delete;"
                      << "}";
