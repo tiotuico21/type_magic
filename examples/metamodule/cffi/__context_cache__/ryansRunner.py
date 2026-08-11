@@ -29,7 +29,8 @@ try:
     result = test_ffi.add_one(
         ptr,
         10,
-        False
+        False,
+        14
     )
 
     print("add_one result:")

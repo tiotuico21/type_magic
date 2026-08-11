@@ -1,16 +1,92 @@
 
+from tempfile import template
+
 import numba
-from numba import types
+from numba import double, types
 from numba import cfunc
 from llvmlite import binding
 import inspect 
-#from type_magic import CONTEXT
+#import magic 
 import subprocess
 
 import re
 
+from numpy import typename
+
 class CONTEXT:
     pass
+
+class MetaModPrintTests:
+    def make_trait_print_str():
+        str_trait_print = r'''
+template <typename T>
+struct Print{
+    struct PrintFn{};
+
+    typedef StaticTable<
+        container::Binding<PrintFn, void(T)>>
+        STable;
+};
+'''
+        return str_trait_print
+
+    def make_component_print_str():
+        str_component_print = r'''
+template <typename T>
+struct PrintImplMeta{
+    template <typename CONTEXT>
+    struct PrintImpl{
+        void my_print(T item){
+            std::cout << "Print: " << item << std::endl;
+        }
+        typedef StaticTable<
+            container::Binding<
+                typename Print<T>::PrintFn,
+                Fn<&PrintImplMeta::template PrintImpl<CONTEXT>::my_print>
+            >
+        >
+        STable;
+    };
+
+    typedef context::SimpleModule <
+        Meta<PrintImpl>,
+        context::RequirementSet<>,
+        context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
+    > Module;
+};
+
+template <typename T>
+struct PrintImplFFIMeta;
+
+template <typename T>
+struct PrintImplFFIMeta <FFIEntry<Print<T>>> { 
+    typedef context::SimpleModule <
+            Meta<PrintImplMeta<T>::template PrintImpl>,
+            context::RequirementSet<>,
+            context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
+        > Module;
+};
+
+
+'''
+        return str_component_print
+
+
+    def make_print_meta_module_str():
+        str_print_meta_module = r'''
+typedef context::ModuleBundle<
+    context::MetaModule <
+        Print,
+        PrintImplMeta
+    >,
+    context::MetaModule <
+        FFIEntry,
+        PrintImplFFIMeta
+    >
+> PrintModule;
+'''
+        return str_print_meta_module
+
 
 class MiscFuncForNumba:
     def make_cpp_to_numba_fun_str():
@@ -722,7 +798,7 @@ using FFIGenModule = context::SimpleModule<
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, FFIGenModule>;
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, PrintModule,FFIGenModule>;
 
 template <typename CTX>
 void run()
@@ -775,7 +851,8 @@ typedef typename BaseInputState
 
         for fn in fn_list:
             trait_list.append(UtilStrings.make_ffi_wrapper_str(fn))
-
+        trait_list.append("Print<int>")
+        trait_list.append("FFIEntry<Print<int>>")
         trait_list.append("FFIGen")
 
         
@@ -863,15 +940,6 @@ std::vector<std::string> extern_func_headers = {
     def make_empty_linker_header_array_str():
         return r'''std::vector<std::string> extern_linker_headers = {};'''
     
-    @staticmethod
-    def make_module_for_fn_str(fn_name):
-        str_fn_module = ""
-        str_fn_module += "using " + UtilStrings.to_pascal_case(fn_name) + "Module = context::SimpleModule<\n\t"
-        str_fn_module += "Meta<Impl" + UtilStrings.to_pascal_case(fn_name) + ">,\n\t"
-        str_fn_module += "context::RequirementSet<>,\n\t"
-        str_fn_module += "context::ImplementationSet<" + UtilStrings.to_pascal_case(fn_name) + ", FFIEntry<" + UtilStrings.to_pascal_case(fn_name) + ">>\n"
-        str_fn_module += ">;\n\n"
-        return str_fn_module
     
     @staticmethod
     def make_logic_h_include():
@@ -889,6 +957,12 @@ std::vector<std::string> extern_func_headers = {
         str_logic_h_include += "#else\n"
         str_logic_h_include += "#define ASSERT_TEXT(TEXT) \"\\n\\n\" __FILE__ \":\" LINE_STRING TEXT \"\\n\"\n"
         str_logic_h_include += "#endif\n\n\n"
+        str_logic_h_include += r'''
+#include <unordered_map>
+#include <string>
+#include <stdexcept>
+#include <iostream>
+'''
         return str_logic_h_include
     
     @staticmethod
@@ -1187,6 +1261,16 @@ class ApyGenerator:
                 str_extern_linker_list.append(ApyGenerator.make_func_signature_Apy_gpu(fn, fn.__name__))
         return str_extern_linker_list
 
+class ModuleCreation:
+    @staticmethod
+    def make_module_for_fn_str(fn_name):
+        str_fn_module = ""
+        str_fn_module += "using " + UtilStrings.to_pascal_case(fn_name) + "Module = context::SimpleModule<\n\t"
+        str_fn_module += "Meta<Impl" + UtilStrings.to_pascal_case(fn_name) + ">,\n\t"
+        str_fn_module += "context::RequirementSet<>,\n\t"
+        str_fn_module += "context::ImplementationSet<" + UtilStrings.to_pascal_case(fn_name) + ", FFIEntry<" + UtilStrings.to_pascal_case(fn_name) + ">>\n"
+        str_fn_module += ">;\n\n"
+        return str_fn_module
 
 
 '''
@@ -1195,13 +1279,14 @@ def add_one(ctx: CONTEXT, arg1: int, arg2: str, arg3: bool) -> int:
 '''
 @numba.njit()
 def my_print(value: int):
-    print(value)
+    pass
 
-def add_one(ctx: CONTEXT, arg1: int, arg2: bool) -> int:
-    my_print(arg1)
+def add_one(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
+    #imported_ctx = magic.test_ffi.construct()
+    #val = magic.add_it(imported_ctx)
     if (arg2):
-        return arg1 + 1
-    return 0
+        return arg1 
+    return arg1 + arg3
 
 def add_it(ctx: CONTEXT) -> int:
     return 8
@@ -1227,20 +1312,20 @@ std::vector<std::string> extern_func_headers = {
 
 def make_func_component_str(fn, fn_name):
     sig = inspect.signature(fn)
-    str_cpp_extern_func = "extern \"C\" int " + fn_name + "(" + AnnotationGetter.get_str_return_type(fn) + "* ret"
+    str_cpp_extern_func = "extern \"C\" " + AnnotationGetter.get_str_return_type(fn) + " " + fn_name + "("
     param_list = AnnotationGetter.get_str_param_list(fn)
     call_param_list = AnnotationGetter.get_cplus_param_list(fn)
     call_param_list = call_param_list[1:]
     call_param_list = ", ".join(call_param_list)
 
-    str_cpp_extern_func += ", " + param_list + ");"
+    str_cpp_extern_func += param_list + ");"
     str_cpp_component = "template <typename CONTEXT>\nstruct Impl" + UtilStrings.to_pascal_case(fn_name) + "{\n\t" + AnnotationGetter.get_str_return_type(fn) + " call("
     
     print(f"length: {len(param_list)}")
     if len(AnnotationGetter.get_param_type_list(fn)) == 1:
         str_cpp_component += call_param_list + "){\n\t\t" + AnnotationGetter.get_str_return_type(fn) + " result;\n\t\t"
-        str_cpp_component += fn_name + "(&result, (CONTEXT*)this);\n\t\t"
-        str_cpp_component += "return result;\n\t}\n\t" 
+        str_cpp_component += "return " + fn_name + "((CONTEXT*)this);\n\t}\n\t"
+        #str_cpp_component += "return result;\n\t}\n\t" 
         str_cpp_component += UtilStrings.make_STABLE_for_trait_component(fn) 
         str_cpp_component += "\n};"
     else:
@@ -1253,9 +1338,9 @@ def make_func_component_str(fn, fn_name):
             body_arg_list.append(f"arg{index}")
             index += 1
         str_cpp_component += call_param_list + "){\n\t\t" + AnnotationGetter.get_str_return_type(fn) + " result;\n\t\t"
-        str_cpp_component += fn_name + "(&result, (CONTEXT*)this," + ", ".join(body_arg_list) + ");\n\t\t"
-        str_cpp_component += "std::cout << arg1 << std::endl;"
-        str_cpp_component += "\n\treturn result;\n\t}\n\t"
+        str_cpp_component += "return " + fn_name + "((CONTEXT*)this," + ", ".join(body_arg_list) + ");\n\t}\n\t"
+        #str_cpp_component += "std::cout << arg1 << std::endl;"
+        #str_cpp_component += "\n\treturn result;\n\t}\n\t"
         str_cpp_component += UtilStrings.make_STABLE_for_trait_component(fn)
         str_cpp_component += "\n};"
     full_cpp_code = str_cpp_extern_func + "\n" + str_cpp_component
@@ -1266,7 +1351,7 @@ def make_func_trait_str(fn, fn_name):
     str_cpp_trait = ""
     str_cpp_trait += "struct " + UtilStrings.to_pascal_case(fn_name) + "{\n\t"
     str_cpp_trait += "struct CallFn{};\n\t"
-    str_cpp_trait += "typedef StaticTable<" + "\n\t\tcontainer::Binding<CallFn, int* (" + AnnotationGetter.get_str_return_type(fn) + "*, "
+    str_cpp_trait += "typedef StaticTable<" + "\n\t\tcontainer::Binding<CallFn, " + AnnotationGetter.get_str_return_type(fn) + "("
     param_type_list = AnnotationGetter.get_param_type_list(fn)
     if not param_type_list:
         str_cpp_trait += ")>>\n\t"
@@ -1376,6 +1461,9 @@ def make_logic_h(fn_list, is_for_cpu):
     fn_struct_str = UtilStrings.make_fn_struct_in_logic_h()
     ffi_trait_str = UtilStrings.make_ffi_trait_struct_in_logic_h()
     static_table_str = UtilStrings.make_static_table_struct_in_logic_h()
+    print_trait_str = MetaModPrintTests.make_trait_print_str()
+    print_impl_str = MetaModPrintTests.make_component_print_str()
+    print_module_str = MetaModPrintTests.make_print_meta_module_str()
     type_list_def_str = UtilStrings.make_type_list_str_in_logic_h()
     pure_fn_eq_str = UtilStrings.make_pure_fn_eq_struct_in_logic_h()
     gen_ffi__struct_str = FFIGenCodeGetter.make_full_ffi_impl_struct()
@@ -1388,12 +1476,14 @@ def make_logic_h(fn_list, is_for_cpu):
     with open ("logic.h", "w") as f:
         f.write(f"{include_str}\n{get_type_name_str}\n{apy_sig_list}\n{apy_param_list}\n{cpp_to_numba_str}\n{empty_linker_array_str}\n{fn_struct_str}\n{ffi_trait_str}\n{static_table_str}\n")
         #f.write("std::string ")
+        f.write(f"{print_trait_str}\n\n")
         for name, code_body in cpp_dict["RequirementSet"].items():
             f.write(code_body[0])
             f.write("\n")
+        f.write(f"{print_impl_str}\n\n{print_module_str}\n\n")
         f.write("\n")
         for name, code_body in cpp_dict["RequirementSet"].items():
-            f.write(f"{code_body[1]}\n{UtilStrings.make_module_for_fn_str(name)}\n")
+            f.write(f"{code_body[1]}\n{ModuleCreation.make_module_for_fn_str(name)}\n")
         f.write("\n")
         f.write(f"{type_list_def_str}\n{pure_fn_eq_str}\n{gen_ffi__struct_str}")
 
@@ -1417,6 +1507,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
     result = subprocess.run(
         [
             "g++",
+            #"-g",
             "-static",
             "-std=c++20",
             main_file_name,
@@ -1440,9 +1531,11 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
         text=True
     )
 
+    '''
     result = subprocess.run(
         [
             "clang-22",
+            "-g",
             "-static-libstdc++",
             "-std=c++20",
             "-shared",
@@ -1453,6 +1546,22 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
             "my_dynamic_library.so"
         ]
     )
+    '''
+    result = subprocess.run(
+    [
+        "clang-22",
+        #"-g",
+        "-std=c++20",
+        "-shared",
+        "-fPIC",
+        "cffi.cpp",
+        *ll_list,
+        "-lstdc++",
+        "-o",
+        "my_dynamic_library.so",
+    ]
+    )
+    
 
 
     if result.returncode != 0:
@@ -1470,21 +1579,3 @@ compile_and_run([add_one, add_it], "main.cpp", True)
 print(AnnotationGetter.get_cplus_param_list(add_one))
 
 
-'''
-#include <typeinfo>
-#include "../../../include/include.h"
-
-#include <chrono>
-#include <thread>
-
-#include <functional>
-
-#define STRINGIFY(x) STRINGIFY_HELPER(x)
-#define STRINGIFY_HELPER(x) #x
-#define LINE_STRING STRINGIFY(__LINE__)
-#ifdef COLOR_ASSERTS
-#define ASSERT_TEXT(TEXT) "\n\n\e[33m\e[1m" __FILE__ ":" LINE_STRING " \e[0m\e[33m" TEXT "\e[0m\n"
-#else
-#define ASSERT_TEXT(TEXT) "\n\n" __FILE__ ":" LINE_STRING TEXT "\n"
-#endif
-'''

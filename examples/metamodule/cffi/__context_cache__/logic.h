@@ -17,6 +17,11 @@
 
 
 
+#include <unordered_map>
+#include <string>
+#include <stdexcept>
+#include <iostream>
+
 
 template <typename TYPE>
 static std::string query(){
@@ -41,15 +46,15 @@ static std::string get_type_name(){
 std::vector<std::string> extern_func_headers = {
 	"def construct():",
 	"def destruct(ptr):",
-	"def add_one(ptr, arg1, arg2):",
+	"def add_one(ptr, arg1, arg2, arg3):",
 	"def add_it(ptr):"
 };
 std::vector<std::string> extern_func_param = {
 	"()",
 	"(ptr)",
-	"(ptr, arg1, arg2)",
+	"(ptr, arg1, arg2, arg3)",
 	"(ptr)",
-	"(retptr, ptr, arg1, arg2)",
+	"(retptr, ptr, arg1, arg2, arg3)",
 	"(retptr, ptr)"
 };
 
@@ -188,27 +193,88 @@ struct StaticTable
 };
 
 
+
+template <typename T>
+struct Print{
+    struct PrintFn{};
+
+    typedef StaticTable<
+        container::Binding<PrintFn, void(T)>>
+        STable;
+};
+
+
 struct AddOne{
 	struct CallFn{};
 	typedef StaticTable<
-		container::Binding<CallFn, int* (int*, void*, int, bool)>>
+		container::Binding<CallFn, float(void*, float, bool, float)>>
 	STable;
 };
 struct AddIt{
 	struct CallFn{};
 	typedef StaticTable<
-		container::Binding<CallFn, int* (int*, void*)>>
+		container::Binding<CallFn, int(void*)>>
 	STable;
 };
 
-extern "C" int add_one(int* ret, void* ctx, int arg1, bool arg2);
+template <typename T>
+struct PrintImplMeta{
+    template <typename CONTEXT>
+    struct PrintImpl{
+        void my_print(T item){
+            std::cout << "Print: " << item << std::endl;
+        }
+        typedef StaticTable<
+            container::Binding<
+                typename Print<T>::PrintFn,
+                Fn<&PrintImplMeta::template PrintImpl<CONTEXT>::my_print>
+            >
+        >
+        STable;
+    };
+
+    typedef context::SimpleModule <
+        Meta<PrintImpl>,
+        context::RequirementSet<>,
+        context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
+    > Module;
+};
+
+template <typename T>
+struct PrintImplFFIMeta;
+
+template <typename T>
+struct PrintImplFFIMeta <FFIEntry<Print<T>>> { 
+    typedef context::SimpleModule <
+            Meta<PrintImplMeta<T>::template PrintImpl>,
+            context::RequirementSet<>,
+            context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
+        > Module;
+};
+
+
+
+
+
+typedef context::ModuleBundle<
+    context::MetaModule<
+        Print,
+        PrintImplMeta
+    >,
+    context::MetaModule<
+        FFIEntry,
+        PrintImplFFIMeta
+    >
+> PrintModule;
+
+
+
+extern "C" float add_one(void* ctx, float arg1, bool arg2, float arg3);
 template <typename CONTEXT>
 struct ImplAddOne{
-	int call(int arg1, bool arg2){
-		int result;
-		add_one(&result, (CONTEXT*)this,arg1, arg2);
-		std::cout << arg1 << std::endl;
-	return result;
+	float call(float arg1, bool arg2, float arg3){
+		float result;
+		return add_one((CONTEXT*)this,arg1, arg2, arg3);
 	}
 	
 typedef StaticTable<
@@ -224,13 +290,12 @@ using AddOneModule = context::SimpleModule<
 >;
 
 
-extern "C" int add_it(int* ret, void* ctx);
+extern "C" int add_it(void* ctx);
 template <typename CONTEXT>
 struct ImplAddIt{
 	int call(){
 		int result;
-		add_it(&result, (CONTEXT*)this);
-		return result;
+		return add_it((CONTEXT*)this);
 	}
 	
 typedef StaticTable<
