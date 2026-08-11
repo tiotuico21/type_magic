@@ -19,7 +19,7 @@ extern_destruct = numba.types.ExternalFunction(
 	)
 )
 
-extern_add_one___call_fn = numba.types.ExternalFunction(
+extern__TYPEMAGICN6AddOne6CallFnE = numba.types.ExternalFunction(
 	"_TYPEMAGICN6AddOne6CallFnE",
 	numba.core.typing.signature(
 		numba.types.float32, 
@@ -27,11 +27,19 @@ extern_add_one___call_fn = numba.types.ExternalFunction(
 	)
 )
 
-extern_add_it___call_fn = numba.types.ExternalFunction(
+extern__TYPEMAGICN5AddIt6CallFnE = numba.types.ExternalFunction(
 	"_TYPEMAGICN5AddIt6CallFnE",
 	numba.core.typing.signature(
 		numba.types.int32, 
 		numba.types.voidptr
+	)
+)
+
+extern__TYPEMAGICN5PrintIiE7PrintFnE = numba.types.ExternalFunction(
+	"_TYPEMAGICN5PrintIiE7PrintFnE",
+	numba.core.typing.signature(
+		numba.types.void, 
+		numba.types.voidptr, numba.types.int32
 	)
 )
 
@@ -45,9 +53,9 @@ def destruct(ptr):
 
 @numba.njit(cache=False)
 def add_one(ptr, arg1, arg2, arg3):
-	return extern_add_one___call_fn(ptr, arg1, arg2, arg3)
+	return extern__TYPEMAGICN6AddOne6CallFnE(ptr, arg1, arg2, arg3)
 
 @numba.njit(cache=False)
 def add_it(ptr):
-	return extern_add_it___call_fn(ptr)
+	return extern__TYPEMAGICN5AddIt6CallFnE(ptr)
 
