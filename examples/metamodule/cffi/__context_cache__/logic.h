@@ -43,6 +43,7 @@ static std::string get_type_name(){
 
 }
 
+
 std::vector<std::string> extern_func_headers = {
 	"def construct():",
 	"def destruct(ptr):",
@@ -131,7 +132,8 @@ std::string static cppToNumbaType(std::string cppType)
 
     return result;
 }
-    
+
+
 std::vector<std::string> extern_linker_headers = {};
 template <auto... THING>
 struct Fn
@@ -204,6 +206,7 @@ struct Print{
 };
 
 
+
 struct AddOne{
 	struct CallFn{};
 	typedef StaticTable<
@@ -241,10 +244,12 @@ struct PrintImplMeta{
 };
 
 template <typename T>
-struct PrintImplFFIMeta;
+struct PrintImplFFIMeta {
+    typedef context::EmptyModule Module;
+};
 
 template <typename T>
-struct PrintImplFFIMeta <FFIEntry<Print<T>>> { 
+struct PrintImplFFIMeta <Print<T>> { 
     typedef context::SimpleModule <
             Meta<PrintImplMeta<T>::template PrintImpl>,
             context::RequirementSet<>,
@@ -255,17 +260,17 @@ struct PrintImplFFIMeta <FFIEntry<Print<T>>> {
 
 
 
-
 typedef context::ModuleBundle<
-    context::MetaModule<
+    context::MetaModule <
         Print,
         PrintImplMeta
     >,
-    context::MetaModule<
+    context::MetaModule <
         FFIEntry,
         PrintImplFFIMeta
     >
 > PrintModule;
+
 
 
 
@@ -370,8 +375,8 @@ struct FFIGenImpl{
 
        
     }
-            
-    
+
+
     template <typename T>
     void addFunctionGenRecurse(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
@@ -404,8 +409,8 @@ struct FFIGenImpl{
             }
         }
     }
-    
-    
+
+
     template <typename... T>
     struct ReadEveryFunction;
 
@@ -448,13 +453,16 @@ struct FFIGenImpl{
 
 
                 if (is_for_CPU){
-                    python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
+                    //python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
+                    python_file << "extern_" << typemagic_mangle_name << " = numba.types.ExternalFunction(\n\t\""
                                                 << typemagic_mangle_name
                                                 << "\",\n\tnumba.core.typing.signature(\n\t\t"
                                                 << extern_function_return_type + ", \n\t\t"
                                                 << extern_function_param_list
                                                 << "\n\t)\n)\n\n";
-                    extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
+                    //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
+                    extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+                    
                     gen_file << "extern \"C\" "
                              << resultType << " " << typemagic_mangle_name << "(" << header << ")"
                              << "{"
@@ -493,7 +501,8 @@ struct FFIGenImpl{
                                              << typemagic_mangle_name + "_gpu" << "\", \n\tnumba.core.typing.signature("
                                              << extern_function_return_type
                                              << "(" << extern_function_param_list << ")))\n\n";
-                    extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
+                    //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
+                    extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
                     gen_file << "extern \"C\" "
                              << "int" << " " << typemagic_mangle_name + "_gpu" << "(" << resultType + "* retptr, " + header << ")"
                              << "{"
@@ -569,7 +578,7 @@ struct FFIGenImpl{
         }
     };
 
-    
+
     void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
@@ -629,12 +638,12 @@ struct FFIGenImpl{
             }
         }
     }
-        
-    
+     
+
     void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
-        if (extern_linker_headers.size() == 0 || extern_linker_headers[1] != "extern_destruct")
+        if (extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct")
         {
             if (is_for_CPU){
                 python_file << "extern_destruct = numba.types.ExternalFunction(\n\t\"destructor\",\n\tnumba.core.typing.signature(\n\t\tnumba.types.voidptr, numba.types.voidptr\n\t)\n)\n\n";
@@ -687,7 +696,8 @@ struct FFIGenImpl{
             } 
         } 
     }
-    
+
+
      static std::string toSnakeCase(std::string &trait_name)
     {
         std::string snake_case_trait_name;
@@ -712,7 +722,8 @@ struct FFIGenImpl{
         }
         return snake_case_trait_name;
     }
-    
+
+
     template <typename T>
     struct ParamListToString;
 
@@ -787,7 +798,8 @@ struct FFIGenImpl{
             return total_param_list;
         }
     };
-    
+
+
     int findSpace(std::string func_sig)
     {
         bool entered = false;
@@ -816,7 +828,8 @@ struct FFIGenImpl{
         }
         return -1;
     }
-    
+
+
      void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
     {
         header_file << "#include <thread>"
@@ -849,7 +862,8 @@ struct FFIGenImpl{
         addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true, is_for_CPU);
         addDestructor(cpp_file, python_file, true, is_for_CPU);
     }
-    
+
+
 };
 
 

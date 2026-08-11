@@ -13,748 +13,74 @@ import re
 
 from numpy import typename
 
+
+
+def file_to_string(path):
+    file = open(path)
+    result = file.read()
+    file.close()
+    return result
+
+
+
 class CONTEXT:
     pass
 
 class MetaModPrintTests:
     def make_trait_print_str():
-        str_trait_print = r'''
-template <typename T>
-struct Print{
-    struct PrintFn{};
-
-    typedef StaticTable<
-        container::Binding<PrintFn, void(T)>>
-        STable;
-};
-'''
-        return str_trait_print
+        return file_to_string("cpp_text/trait_print.cpp")
 
     def make_component_print_str():
-        str_component_print = r'''
-template <typename T>
-struct PrintImplMeta{
-    template <typename CONTEXT>
-    struct PrintImpl{
-        void my_print(T item){
-            std::cout << "Print: " << item << std::endl;
-        }
-        typedef StaticTable<
-            container::Binding<
-                typename Print<T>::PrintFn,
-                Fn<&PrintImplMeta::template PrintImpl<CONTEXT>::my_print>
-            >
-        >
-        STable;
-    };
-
-    typedef context::SimpleModule <
-        Meta<PrintImpl>,
-        context::RequirementSet<>,
-        context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
-    > Module;
-};
-
-template <typename T>
-struct PrintImplFFIMeta;
-
-template <typename T>
-struct PrintImplFFIMeta <FFIEntry<Print<T>>> { 
-    typedef context::SimpleModule <
-            Meta<PrintImplMeta<T>::template PrintImpl>,
-            context::RequirementSet<>,
-            context::ImplementationSet<Print<T>, FFIEntry<Print<T>>>
-        > Module;
-};
-
-
-'''
-        return str_component_print
-
+        return file_to_string("cpp_text/component_print.cpp")
 
     def make_print_meta_module_str():
-        str_print_meta_module = r'''
-typedef context::ModuleBundle<
-    context::MetaModule <
-        Print,
-        PrintImplMeta
-    >,
-    context::MetaModule <
-        FFIEntry,
-        PrintImplFFIMeta
-    >
-> PrintModule;
-'''
-        return str_print_meta_module
+        return file_to_string("cpp_text/print_meta_module.cpp")
 
 
 class MiscFuncForNumba:
     def make_cpp_to_numba_fun_str():
-        str_to_numba = r'''
-std::string static cppToNumbaType(std::string cppType)
-{
-    static const std::unordered_map<std::string, std::string> typeMap = {
-        {"bool", "types.boolean"},
-
-        {"char", "types.int8"},
-        {"signed char", "types.int8"},
-        {"unsigned char", "types.uint8"},
-
-        {"short", "types.int16"},
-        {"unsigned short", "types.uint16"},
-
-        {"int", "types.int32"},
-        {"unsigned", "types.uint32"},
-        {"unsigned int", "types.uint32"},
-
-        {"long", "types.int64"},
-        {"unsigned long", "types.uint64"},
-
-        {"long long", "types.int64"},
-        {"unsigned long long", "types.uint64"},
-
-        {"int8_t", "types.int8"},
-        {"uint8_t", "types.uint8"},
-        {"int16_t", "types.int16"},
-        {"uint16_t", "types.uint16"},
-        {"int32_t", "types.int32"},
-        {"uint32_t", "types.uint32"},
-        {"int64_t", "types.int64"},
-        {"uint64_t", "types.uint64"},
-
-        {"float", "types.float32"},
-        {"double", "types.float64"},
-        {"std::string",
-         "CPointer(types.int8)"},
-        {"std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >",
-         "CPointer(types.int8)"},
-        {"void", "types.void"}};
-
-    // Remove trailing whitespace
-    while (!cppType.empty() && std::isspace(cppType.back()))
-        cppType.pop_back();
-
-    int pointerDepth = 0;
-
-    // Count trailing '*'
-    while (!cppType.empty() && cppType.back() == '*')
-    {
-        ++pointerDepth;
-        cppType.pop_back();
-
-        while (!cppType.empty() && std::isspace(cppType.back()))
-            cppType.pop_back();
-    }
-
-    // Special case: void*
-    if (cppType == "void" && pointerDepth == 1)
-        return "types.voidptr";
-
-    auto it = typeMap.find(cppType);
-
-    if (it == typeMap.end())
-        throw std::runtime_error("Unknown C++ type: " + cppType);
-
-    std::string result = it->second;
-
-    for (int i = 0; i < pointerDepth; ++i)
-    {
-        result = "types.CPointer(" + result + ")";
-    }
-
-    return result;
-}
-    '''
-        return str_to_numba
+        return file_to_string("cpp_text/cpp_to_numba_fun.cpp")
 
 class FFIGenCodeGetter:
     @staticmethod
     def make_get_type_name():
-        func_get_type_name_str = r'''
-template <typename TYPE>
-static std::string query(){
-    return __PRETTY_FUNCTION__;
-}
-
-template <typename TYPE>
-static std::string get_type_name(){
-    std::string voidPRETTY = query<void>();
-    std::string ourPRETTY = query<TYPE>();
-
-    int typeIndex = voidPRETTY.find("void");
-
-    int difference = ourPRETTY.length() - voidPRETTY.length();
-
-    int totalLength = difference + 4;
-
-    return ourPRETTY.substr(typeIndex, totalLength);
-
-}
-'''
-        return func_get_type_name_str
+        return file_to_string("cpp_text/get_type_name.cpp")
 
     @staticmethod
     def make_genffi_function():
-        func_genffi_str = r'''
-    void genffi(std::string client_logic_header_file, bool is_for_CPU)
-    {
-        std::fstream header_file;
-        std::fstream cpp_file;
-        std::fstream python_file;
-        header_file.open("cffi.h", std::ios::trunc | std::ios::out);
-        cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
-        python_file.open("test_ffi.py", std::ios::trunc | std::ios::out);
-
-        python_file << "import re\n"
-                    << "import sys\n"
-                    << "import numba\n"
-                    << "import inspect\n"
-                    << "import subprocess\n"
-                    << "\n"
-                    << "from llvmlite import binding\n"
-                    << "\n"
-                    << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n";
-
-        addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
-        addFunctionBody(cpp_file, python_file, is_for_CPU);
-        header_file.close();
-        cpp_file.close();
-
-        for (size_t i = 0; i < extern_func_headers.size(); ++i)
-        {
-            python_file << "@numba.njit(cache=False)\n";
-            python_file << extern_func_headers[i] << "\n\t"
-                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
-        }
-        std::cout << python_file.is_open() << '\n';
-        python_file.close();
-
-        // why fPIC smthn about address reolacation
-        
-
-       
-    }
-            
-    '''
-        return func_genffi_str
+        return file_to_string("cpp_text/gen_ffi.cpp")
     
     @staticmethod
     def make_add_func_gen_recurse():
-        func_gen_recurse_str = r'''
-    template <typename T>
-    void addFunctionGenRecurse(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
-    {
-        if constexpr (std::is_same<T, container::TypeSet<>>::value)
-        {
-            return;
-        }
-        // why did i have to guard this with an else
-        else
-        {
-            typedef typename T::MapType::HeadItemType CurrFFISpec;
-            typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
-            std::string typenameMangle = typeid(CurrTrait).name();
-            std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
-            std::string trait_name = get_type_name<CurrTrait>();
-            std::string trait_name_snake_case = toSnakeCase(trait_name);
-
-            typedef As<CurrTrait, CONTEXT> sig_component;
-
-            std::string func_sig = get_type_name<CONTEXT>(); 
-            if (isCpp)
-            {
-                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file, python_file, is_for_CPU);
-                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, python_file, isCpp, is_for_CPU);
-            }
-            else
-            {
-                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(false, trait_name, gen_file, python_file, is_for_CPU);
-                addFunctionGenRecurse<typename T::MapType::TailType::KeySet>(gen_file, python_file, false, is_for_CPU);
-            }
-        }
-    }
-    
-    '''
-        return func_gen_recurse_str
+        return file_to_string("cpp_text/func_gen_recurse.cpp")
     
     @staticmethod
     def make_read_every_function():
-        readEveryFunction_str = r'''
-    template <typename... T>
-    struct ReadEveryFunction;
-
-    template <typename... TAIL>
-    struct ReadEveryFunction<container::TypeMap<TAIL...>>
-    {
-
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
-        {
-            return;
-        }
-    };
-
-    template <typename KEY, typename ITEM, typename... TAIL>
-    struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
-    {
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
-        {
-            std::string mangle_func_name = typeid(KEY).name();
-            std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
-            std::string reg_str_func_name = get_type_name<KEY>();
-
-            std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
-
-            if (isCpp)
-            {
-                typedef typename ITEM::Args method_args_list;
-
-                typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
-                typedef typename outter_args_list::template PopFront<CONTEXT *>::type inner_args_list;
-                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
-                std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
-
-                std::string resultType = get_type_name<typename ITEM::Result>();
-                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
-
-            
-                std::string extern_function_return_type = "numba." + cppToNumbaType(resultType);
-                std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
-
-
-                if (is_for_CPU){
-                    python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
-                                                << typemagic_mangle_name
-                                                << "\",\n\tnumba.core.typing.signature(\n\t\t"
-                                                << extern_function_return_type + ", \n\t\t"
-                                                << extern_function_param_list
-                                                << "\n\t)\n)\n\n";
-                    extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
-                    gen_file << "extern \"C\" "
-                             << resultType << " " << typemagic_mangle_name << "(" << header << ")"
-                             << "{"
-                             << std::endl
-                             << "\t"
-                             << get_type_name<CONTEXT>()
-                             << "* ptr = ("
-                             << get_type_name<CONTEXT>()
-                             << "*) arg0;"
-                             << std::endl
-                             << "\treturn As<"
-                             << traitName
-                             << ", "
-                             << get_type_name<CONTEXT>()
-                             << ">::STable::template call<typename "
-                             << reg_str_func_name
-                             << ">(&(as<"
-                             << traitName;
-                    if (arg_list.size() == 0)
-                    {
-                        gen_file << ">(*ptr)));";
-                    }
-                    else
-                    {
-                        gen_file << ">(*ptr)), "
-                                    << arg_list
-                                    << ");";
-                    }
-                    gen_file << std::endl
-                             << "}"
-                             << std::endl;
-                    ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
-                }
-                else{
-                    python_file << "extern_" << toSnakeCase(reg_str_func_name) << "_gpu = cuda.declare_device(\n\t\""
-                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnumba.core.typing.signature("
-                                             << extern_function_return_type
-                                             << "(" << extern_function_param_list << ")))\n\n";
-                    extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
-                    gen_file << "extern \"C\" "
-                             << "int" << " " << typemagic_mangle_name + "_gpu" << "(" << resultType + "* retptr, " + header << ")"
-                             << "{"
-                             << std::endl
-                             << "\t"
-                             << get_type_name<CONTEXT>()
-                             << "* ptr = ("
-                             << get_type_name<CONTEXT>()
-                             << "*) arg0;"
-                             << std::endl
-                             << "\t*retptr = As<"
-                             << traitName
-                             << ", "
-                             << get_type_name<CONTEXT>()
-                             << ">::STable::template call<typename "
-                             << reg_str_func_name
-                             << ">(&(as<"
-                             << traitName;
-                    if (arg_list.size() == 0)
-                    {
-                        gen_file << ">(*ptr)));";
-                    }
-                    else
-                    {
-                        gen_file << ">(*ptr)), "
-                                    << arg_list
-                                    << ");";
-                    }
-                    gen_file << std::endl
-                                << "\treturn 1;"
-                                << "\n}"
-                                << std::endl;
-                    ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
-                }
-            }
-            else
-            {
-                typedef typename ITEM::Args method_args_list;
-                typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
-
-                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
-
-                std::string resultType = get_type_name<typename ITEM::Result>();
-                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
-
-                if (is_for_CPU){
-                    gen_file << "extern \"C\" "
-                             << resultType
-                             << " "
-                             << typemagic_mangle_name
-                             << "("
-                             << header
-                             << ")"
-                             << ";"
-                             << std::endl;
-                    ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
-                }
-                else{
-                   gen_file << "extern \"C\" "
-                            << "int"
-                            << " "
-                            << typemagic_mangle_name + "_gpu"
-                            << "("
-                            << resultType + "* retptr, " + header
-                            << ")"
-                            << ";"
-                            << std::endl;
-                    ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
-                }
-                
-                // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
-            }
-        }
-    };
-
-    '''
-        return readEveryFunction_str
+        return file_to_string("cpp_text/read_every_function.cpp")
     
     @staticmethod
     def make_constructor_str():
-        constructor_str = r'''
-    void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
-    {
-
-        if (extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct")
-        {
-            if (is_for_CPU){
-                python_file << "extern_construct = numba.types.ExternalFunction(\n\t\"construct\",\n\tnumba.core.typing.signature(numba.types.voidptr)\n)\n\n";
-                extern_linker_headers.push_back("extern_construct");               
-            }
-            else{
-                 python_file << "extern_construct_gpu = cuda.declare_device(\n\t\""
-                             << "construct_gpu\", \n\tnumba.core.typing.signature("
-                             << "numba.types.voidptr"
-                             << "()))\n\n";
-                 extern_linker_headers.push_back("extern_construct_gpu");
-            }
-        }
- 
-
-        // container::repr::type_name<CONTEXT>()
-        if (isCpp)
-        {
-            if (is_for_CPU){
-                gen_file << "extern \"C\" void* construct()";
-                gen_file << "{"
-                         << std::endl 
-                         << "\tvoid* myPtr = (void*) new "
-                         << get_type_name<CONTEXT>()
-                         << ";"
-                         << std::endl
-                         << "\tstd::cout << \"Constructor Ptr:\" << myPtr << std::endl;"
-                         << std::endl
-                         << "return myPtr;"
-                         << "\n}"
-                         << std::endl;
-            }
-            else{
-                gen_file << "extern \"C\" int construct_gpu(void* retptr)";
-                gen_file << "{"
-                         << std::endl
-                         << "\tretptr = (void*) new "
-                         << get_type_name<CONTEXT>()
-                         << ";"
-                         << std::endl
-                         << "\treturn 1;"
-                         << "\n}"
-                         << std::endl;
-            }
-        }
-        else
-        {
-            if (is_for_CPU){
-                gen_file << "extern \"C\" void* construct();" << std::endl;
-            }
-            else{
-                gen_file << "extern \"C\" int construct_gpu(void* retptr);" << std::endl;
-            }
-        }
-    }
-        
-    '''
-        return constructor_str
+        return file_to_string("cpp_text/constructor.cpp")
 
     def make_destructor_str():
-        destructor_str = r'''
-    void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
-    {
-
-        if (extern_linker_headers.size() == 0 || extern_linker_headers[1] != "extern_destruct")
-        {
-            if (is_for_CPU){
-                python_file << "extern_destruct = numba.types.ExternalFunction(\n\t\"destructor\",\n\tnumba.core.typing.signature(\n\t\tnumba.types.voidptr, numba.types.voidptr\n\t)\n)\n\n";
-                extern_linker_headers.push_back("extern_destruct");
-            }
-            else{
-                python_file << "extern_destruct_gpu = cuda.declare_device(\n\t\""
-                            << "destructor_gpu\", \n\tnumba.core.typing.signature("
-                            << "numba.types.void"
-                            << "(numba.types.voidptr)))\n\n";
-                extern_linker_headers.push_back("extern_destruct_gpu");
-            }
-        }
-
-        if (isCpp)
-        {
-            if (is_for_CPU){
-                gen_file << "extern \"C\" void destructor(void* ptr)";
-                gen_file << "{"
-                         << std::endl
-                         << get_type_name<CONTEXT>()
-                         << "*ptr_to_delete = ("
-                         << get_type_name<CONTEXT>()
-                         << "*) ptr;"
-                         << "\n\treturn delete ptr_to_delete;"
-                                     
-                         << "\n}\n\n";
-            }
-            else{
-                //gen_file << "extern \"C\" __device__\n";
-                gen_file << "extern \"C\" int destructor_gpu(void* retptr, void* ptr)";
-                gen_file << "{"
-                         << std::endl
-                         << get_type_name<CONTEXT>()
-                         << "*ptr_to_delete = ("
-                         << get_type_name<CONTEXT>()
-                         << "*) ptr;"
-                         << "\n\tdelete ptr_to_delete;"
-                         << "\n\treturn 1;"
-                         << "\n}\n";
-            }
-        }
-        else
-        {
-            if (is_for_CPU){
-               gen_file << "extern \"C\" void destructor(void* ptr);" << std::endl;
-            }
-            else{
-               gen_file << "extern \"C\" int destructor_gpu(void* retptr, void* ptr);" << std::endl;
-            } 
-        } 
-    }
-    '''
-        return destructor_str
+        return file_to_string("cpp_text/destructor.cpp")
     
     @staticmethod
     def to_snake_case_func_str():
-        str_to_snake_func = r'''
-     static std::string toSnakeCase(std::string &trait_name)
-    {
-        std::string snake_case_trait_name;
-
-        for (size_t i = 0; i < trait_name.size(); i++)
-        {
-            if (std::isupper(static_cast<unsigned char>(trait_name[i])) || static_cast<unsigned char>(trait_name[i]) == ':')
-            {
-                if (i != 0)
-                {
-                    snake_case_trait_name += '_';
-                }
-                if (static_cast<unsigned char>(trait_name[i]) != ':')
-                {
-                    snake_case_trait_name += std::tolower(static_cast<unsigned char>(trait_name[i]));
-                }
-            }
-            else
-            {
-                snake_case_trait_name += trait_name[i];
-            }
-        }
-        return snake_case_trait_name;
-    }
-    '''
-        return str_to_snake_func
+        return file_to_string("cpp_text/snake_case_func.cpp")
     
     @staticmethod
     def param_to_string_str():
-        str_make_string = r'''
-    template <typename T>
-    struct ParamListToString;
-
-    // template <typename... ARGS>
-    template <typename... TAIL>
-    struct ParamListToString<container::TypeArray<TAIL...>>
-    {
-        static std::string makeString(int index, bool includeType, bool forPython = false)
-        {
-            return "";
-        }
-    };
-
-    template <typename HEAD, typename... TAIL>
-    struct ParamListToString<container::TypeArray<HEAD, TAIL...>>
-    {
-        static std::string makeString(int index, bool includeType, bool forPython = false)
-        {
-            // std::cout << "i am going into the recursive case" << std::endl;
-            std::string str_head_type = get_type_name<HEAD>();
-
-            std::string str_types_from_tail = ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType, forPython);
-
-            // std::cout << "index: " << index << "-> " << str_head_type << std::endl;
-            std::string total_param_list = "";
-            if (forPython)
-            {
-                std::string current =
-                    (index == 0)
-                        ? "numba." + cppToNumbaType("void*")
-                        : "numba." + cppToNumbaType(str_head_type);
-
-                if (str_types_from_tail.empty())
-                    return current;
-
-                return current + ", " + str_types_from_tail;
-            }
-            if (includeType)
-            {
-                if (index == 0)
-                {
-                    total_param_list += "void*";
-                }
-                else
-                {
-                    total_param_list += get_type_name<HEAD>();
-                }
-            }
-            if (container::TypeArray<TAIL...>::MapType::ITEM_COUNT == 0)
-            {
-                if (includeType)
-                {
-                    total_param_list += " arg" + std::to_string(index);
-                }
-                else
-                {
-                    total_param_list += "arg" + std::to_string(index);
-                }
-            }
-            else
-            {
-                if (includeType)
-                {
-                    total_param_list += " arg" + std::to_string(index) + ", " + str_types_from_tail;
-                }
-                else
-                {
-                    total_param_list += "arg" + std::to_string(index) + ", " + str_types_from_tail;
-                }
-            }
-            // std::cout << "toal param inside tostring recursive: " << total_param_list << std::endl;
-            return total_param_list;
-        }
-    };
-    '''
-        return str_make_string
+        return file_to_string("cpp_text/param_to_string.cpp")
 
 
     @staticmethod
     def find_space_str():
-        str_find_space = r'''
-    int findSpace(std::string func_sig)
-    {
-        bool entered = false;
-        int depth = 0;
-        for (int i = func_sig.length(); i >= 0; i--)
-        {
-
-            if (func_sig[i] == ')' && !entered)
-            {
-                depth = 1;
-                entered = true;
-            }
-            else if (func_sig[i] == '(' && entered)
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    return i - 1;
-                }
-            }
-
-            else if (func_sig[i] == ')' && entered)
-            {
-                depth++;
-            }
-        }
-        return -1;
-    }
-    '''
-        return str_find_space
+        return file_to_string("cpp_text/find_space.cpp")
     
     @staticmethod
     def ffi_header_body_helper_str():
-        helper_str = r'''
-     void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
-    {
-        header_file << "#include <thread>"
-                    << std::endl
-                    << "#include \"../../../../include/include.h\""
-                    << std::endl
-                    << "#include <functional>"
-                    << std::endl
-                    << "#include <iostream>"
-                    << std::endl
-                    << "#include <fstream>"
-                    << std::endl
-                    << "#include \"" << client_header << "\""
-                    << std::endl;
-
-        addConstructor(header_file, python_file, false, is_for_CPU);
-        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFISet; // get every FFI specialization
-        addFunctionGenRecurse<FFISet>(header_file, python_file, false, is_for_CPU);
-        addDestructor(header_file, python_file, false, is_for_CPU);
-    }
-
-    void addFunctionBody(std::fstream &cpp_file, std::fstream &python_file, bool is_for_CPU)
-    {
-        //std::cout << "adding function body" << std::endl;
-        cpp_file << "#include \"cffi.h\""
-                 << std::endl
-                 << std::endl;
-        addConstructor(cpp_file, python_file, true, is_for_CPU);
-        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
-        addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true, is_for_CPU);
-        addDestructor(cpp_file, python_file, true, is_for_CPU);
-    }
-    '''
-        return helper_str
+        return file_to_string("cpp_text/ffi_header_body_helper.cpp")
     
     @staticmethod
     def make_ffi_module_str():
@@ -820,7 +146,7 @@ void run()
 	else
 	{
 		CTX ctx{};
-		std::cout << "Context not satisfied" << std::endl;
+        std::cout << "Context not satisfied" << std::endl;
 		std::cout << as<context::ContextInfo>(ctx).error_string();
 	}
 }
@@ -1508,6 +834,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
         [
             "g++",
             #"-g",
+            "-DHARMONIZE_TRACK_SEQUENCE",
             "-static",
             "-std=c++20",
             main_file_name,
@@ -1549,8 +876,9 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
     '''
     result = subprocess.run(
     [
-        "clang-22",
+        "clang++",
         #"-g",
+        "-DHARMONIZE_TRACK_SEQUENCE",
         "-std=c++20",
         "-shared",
         "-fPIC",
