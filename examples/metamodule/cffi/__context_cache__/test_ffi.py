@@ -35,14 +35,6 @@ extern__TYPEMAGICN5AddIt6CallFnE = numba.types.ExternalFunction(
 	)
 )
 
-extern__TYPEMAGICN5PrintIiE7PrintFnE = numba.types.ExternalFunction(
-	"_TYPEMAGICN5PrintIiE7PrintFnE",
-	numba.core.typing.signature(
-		numba.types.void, 
-		numba.types.voidptr, numba.types.int32
-	)
-)
-
 @numba.njit(cache=False)
 def construct():
 	return extern_construct()
@@ -58,4 +50,8 @@ def add_one(ptr, arg1, arg2, arg3):
 @numba.njit(cache=False)
 def add_it(ptr):
 	return extern__TYPEMAGICN5AddIt6CallFnE(ptr)
+
+@numba.njit(cache=False)
+def print_int(ptr, arg1):
+	return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
 

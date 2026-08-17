@@ -29,6 +29,14 @@
             python_file << extern_func_headers[i] << "\n\t"
                         << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
         }
+
+        /*
+        def print_int(ptr, arg1):
+	        return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
+        */
+        python_file << "@numba.njit(cache=False)\n";
+        python_file << "def print_int(ptr, arg1):\n\treturn extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)\n\n";
+
         std::cout << python_file.is_open() << '\n';
         python_file.close();
 

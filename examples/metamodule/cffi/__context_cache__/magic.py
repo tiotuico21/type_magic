@@ -27,7 +27,7 @@ class VModuleLoader:
 class VModuleFinder:
     @classmethod
     def find_spec(cls, fullname, path, target=None):
-        if fullname == "magic":
+        if fullname == "vmodule":
             return ModuleSpec(fullname, VModuleLoader())
         return None
 

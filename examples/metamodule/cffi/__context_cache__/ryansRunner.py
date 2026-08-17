@@ -62,7 +62,17 @@ except Exception as e:
     print(e)
 
 
+try:
+    print("\nTesting print_int()")
 
+    test_ffi.print_int(ptr, 42)
+
+    print("PASSED print_int")
+
+except Exception as e:
+    print("FAILED print_int")
+    print(type(e))
+    print(e)
 # Test destructor
 print("\nTesting destruct()")
 

@@ -46,6 +46,8 @@ namespace context {
         };
     };
 
+     struct PublicTrait{};
+
     template<typename IMPL, typename... ARGS>
     struct SimpleModule
     {
@@ -53,13 +55,32 @@ namespace context {
         typedef typename container::template TypeSet<ARGS...>::template CollapseAll<RequirementSet>::type ReqSet;
         typedef typename container::template TypeSet<ARGS...>::template CollapseAll<ImplementationSet>::type::SetType ImplSet;
 
-        template<typename TRAIT>
+       
+
+        
+        template <typename SET> 
+        struct WrapSetAsMap{};
+
+        template <typename... TRAITS> 
+        struct WrapSetAsMap<container::TypeSet<TRAITS...>>{
+            typedef container::TypeMap<container::Binding<TRAITS, container::TypeSet<>>...> type;
+        };
+            
+
+        template<typename TRAIT, typename ENABLE=void>
         struct ImplFor {
             static constexpr bool TRAIT_VALID = ImplSet::template has_item<TRAIT>();
             typedef typename container::TypeArray<
                 container::TypeMap<>,container::TypeMap<container::Binding<IMPL,typename ReqSet::SetType>>
             >::template ItemAt<(size_t)TRAIT_VALID>::type type;
         };
+        
+
+        template <typename TRAIT>
+        struct ImplFor <TRAIT, typename std::enable_if<std::is_same<PublicTrait, TRAIT>::value>::type> {
+            typedef typename WrapSetAsMap<ImplSet>::type type;
+        };
+        
     };
 
     template<typename TAG_TRAIT>
@@ -107,10 +128,22 @@ namespace context {
             typedef typename MODULE_TEMPLATE<ARGS...>::Module type;
         };
 
-        template<typename TRAIT>
+        template<typename TRAIT, typename ENABLE=void>
         struct ImplFor {
             typedef typename ModuleFor<TRAIT>::type::template ImplFor<TRAIT>::type type;
         };
+        template <typename TRAIT>
+        struct ImplFor <TRAIT, typename std::enable_if<std::is_same<PublicTrait, TRAIT>::value>::type> {
+            typedef typename container::TypeMap<
+                container::Binding<Meta<TRAIT_TEMPLATE>,container::TypeSet<>>
+            > type;
+        };
+        //DOESNT REALLY WORK BC TRAIT IS PUBLIX TRAIT IN THIS CASE SO THATS ALL THATS IN TYPE MAP
+
+        //MAYBE NEED ANOTHER HELPER METHOD LIKE BEFORE TO JS DO WJAT THE OTHER IMPL FOR IS DOING TO GET ALL THE TRAITS IN META
+
+
+        
 
     };
 
@@ -141,7 +174,7 @@ namespace context {
                 typedef typename A::template LossyCombine<ImplMap> LossyCombo;
                 typedef typename LossyCombo::type type;
                 static_assert(
-                    !LossyCombo::duplicate_key,
+                    (std::is_same<TRAIT, PublicTrait>::value || (!LossyCombo::duplicate_key)),
                     ASSERT_TEXT( "ERROR: The same type is listed as an implementation multiple times! Each implementation should be "
                     "generated only once across all modules.")
                 );
