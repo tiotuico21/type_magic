@@ -14,6 +14,8 @@ from numba import njit
 from numba.core.errors import NumbaTypeError
 from numba.core.extending import overload_method
 import numba as nb
+import numpy as np
+from numpy import int64
 
 
 class MyPrint(object):
@@ -29,26 +31,6 @@ class MyPrintType(types.Type):
         #do we need to add a kind
         super(MyPrintType, self).__init__(name=f"MyPrintType({kind})")
 
-    
-@overload_method(MyPrintType, '__call__')
-def call_overload(self):
-    name = f"{self.kind}"
-    def call_impl(self):
-        print("------->",name)
-    return call_impl
-
-@lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
-def method_impl(context, builder, sig, args):
-    typing_context = context.typing_context
-    fnty = typing_context.resolve_value_type(call_overload)
-    sig = fnty.get_call_type(typing_context, sig.args, {})
-    sig = sig.replace(pysig=nb.core.utils.pysignature(call_overload))
-
-    call = context.get_function(fnty, sig)
-
-    context.add_linking_libs(getattr(call, 'libs', ()))
-    return call(builder, args)
-
 my_print_set = {}
 @staticmethod
 def my_print_type(kind):
@@ -57,22 +39,110 @@ def my_print_type(kind):
         
     return my_print_set[kind]
 
+
+# my_print_ext_map = {
+#     my_print_type(nb.types.Integer) : nb.types.ExternalFunction(
+#         "_TYPEMAGICNIsTrue6CallFnE",
+#         nb.core.typing.signature(
+#             nb.types.void, 
+#             nb.types.voidptr
+#         )
+#     )
+# }
+
+def print_int(self,val):
+    print("Int: ", val)
+
+def print_float(self,val):
+    print("Float: ",val)
+
+def print_void(self):
+    print("(void)")
+
+def print_record(self, val):
+    print("record found")
+
+record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
+my_print_ext_map = {
+    my_print_type(nb.types.Integer) : print_int,
+    my_print_type(nb.types.Float) : print_float,
+    my_print_type(nb.types.void) : print_void,
+    my_print_type(record_type)  : print_record,
+}
+    
+@overload_method(MyPrintType, '__call__')
+def call_overload_2_arg(self,val):
+    return my_print_ext_map[self]
+
+@overload_method(MyPrintType, '__call__')
+def call_overload_1_arg(self):
+    return my_print_ext_map[self]
+
+call_overload = {
+    1 : call_overload_1_arg,
+    2 : call_overload_2_arg,
+}
+
+@lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
+def method_impl(context, builder, sig, args):
+    typing_context = context.typing_context
+    overload = call_overload[len(sig.args)]
+    fnty = typing_context.resolve_value_type(overload)
+    sig = fnty.get_call_type(typing_context, sig.args, {})
+    sig = sig.replace(pysig=nb.core.utils.pysignature(overload))
+
+    call = context.get_function(fnty, sig)
+
+    context.add_linking_libs(getattr(call, 'libs', ()))
+    return call(builder, args)
+
+
+
 @typeof_impl.register(MyPrint)
 def typeof_index(val, c):
     return my_print_type(val.kind)
 
 #as_numba_type.register(MyPrint, my_print_set)
 
+
+
+
 @type_callable(MyPrint)
 def type_my_print(context):
-    valid_type_set = set([nb.types.Integer,nb.types.Float])
+    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type])
+    print(f"Valid type set is : {valid_type_set}")
     def typer(kind):
+        print("")
+        print("")
+        print("___________________")
+        print("NON INSTANCE TYPE")
+        print(f"FOUND KIND: {kind} with type {type(kind)}")
         if isinstance(kind,nb.types.TypeRef):
+            print("THIS IS A TYPEREF")
             kind = kind.instance_type
+        if (isinstance(kind, nb.types.NumberClass)):
+            kind = kind.instance_type
+            print("______________________")
+            print("INSTANCE TYPE")
+            print(kind)
+            print("______________________")
+            print("")
+        if (isinstance(kind, nb.types.Record)):
+            print("THIS IS A RECORD")
+            
         if kind in valid_type_set:
-            print("*************vali type")
-            print(my_print_type(kind))
-            return my_print_type(kind)
+                    print("_____________________________________________________")
+                    print("ENTERING VALID TYPE BRANCH")
+                    print("*************vali type")
+                    print("")
+                    print("88888888888888")
+                    print(kind)
+                    print("88888888888888")
+                    print(my_print_type(kind))
+                    print("_____________________________________________________")
+                    print("")
+                    return my_print_type(kind)
+                    
         else:
             raise NumbaTypeError(f"Type {kind} not in type set")
     return typer 
@@ -159,13 +229,44 @@ def makeInstance(x):
     retInstance = MyPrint(x)
     return retInstance
 
+#cannt decor with njir bc does not like hetero thypes 
+def makeInstanceList(trait_list):
+    retList = []
+    for x in trait_list:
+        retList.append(makeInstance(x))
+    return retList
+
 @njit
 def foo(myinstance):
-    myinstance()
-    MyPrint(nb.types.Float)()
+    myinstance(1)
+    MyPrint(nb.float64)
+    #MyPrint(nb.types.void)()
 
-ret = makeInstance(nb.types.Integer)
+numba_dtype = record_type
+
+print("AS NUMBA TYPE ---->")
+print(nb.core.typing.asnumbatype.as_numba_type(nb.float64))
+
+print("___________________")
+print("RECORD")
+print(numba_dtype)
+print("___________________-")
+print("")
+#ret = makeInstance(nb.types.Integer)
+ret = makeInstance(nb.int64)
 foo(ret)
+ret = makeInstance(nb.types.void)
+foo(ret)
+ret = makeInstance(numba_dtype)
+foo(ret)
+#retList = makeInstanceList([ret, nb.types.Integer, nb.types.Float, nb.types.Boolean])
 
+print("")
+print("")
+print("")
+#foo(retList[0])
+#foo(retList[1])
+
+#print(retList)
 #print(dir(MyPrint(1)))
 #print(nb.typeof(ret))
