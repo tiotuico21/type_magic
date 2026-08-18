@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, PrintModule,FFIGenModule>;
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, PrintModule,FFIGenModule>;
 ;
 
 template <typename CTX>
@@ -83,7 +83,7 @@ int main()
 
 typedef typename BaseInputState
     ::template SetItem<key::RequirementSet, 
-TypeSet<AddOne, AddIt, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIGen>
+TypeSet<AddOne, AddIt, SubArgs, IsTrue, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<SubArgs>, FFIEntry<IsTrue>, FFIGen>
 			>::type StandardTraits;
         run<typename context::CreateContextType<StandardTraits>::type>();
         return 0;

@@ -124,7 +124,7 @@ using FFIGenModule = context::SimpleModule<
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, PrintModule,FFIGenModule>;
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, PrintModule,FFIGenModule>;
 ;
 
 template <typename CTX>
@@ -658,6 +658,16 @@ def add_one(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
         return arg1 
     return arg1 + arg3
 
+def sub_args(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
+    #imported_ctx = magic.test_ffi.construct()
+    #val = magic.add_it(imported_ctx)
+    if (arg2):
+        return arg1 
+    return arg1 - arg3
+
+def is_true(ctx: CONTEXT, arg1: bool) -> bool: 
+    return arg1
+
 def add_it(ctx: CONTEXT) -> int:
     return 8
 
@@ -943,7 +953,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
     
 
 
-compile_and_run([add_one, add_it], "main.cpp", True)
+compile_and_run([add_one, add_it, sub_args, is_true], "main.cpp", True)
 
 #make_cpp_dict([add_it, add_one])
 

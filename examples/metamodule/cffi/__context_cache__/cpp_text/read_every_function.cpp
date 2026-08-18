@@ -19,6 +19,11 @@
         {
             std::string mangle_func_name = typeid(KEY).name();
             std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
+            size_t pos = typemagic_mangle_name.find("N");
+
+            if (pos != std::string::npos) {
+                typemagic_mangle_name.erase(pos + 1, 1);
+            }
             std::string reg_str_func_name = get_type_name<KEY>();
 
             std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;

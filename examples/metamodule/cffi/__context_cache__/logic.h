@@ -48,15 +48,21 @@ std::vector<std::string> extern_func_headers = {
 	"def construct():",
 	"def destruct(ptr):",
 	"def add_one(ptr, arg1, arg2, arg3):",
-	"def add_it(ptr):"
+	"def add_it(ptr):",
+	"def sub_args(ptr, arg1, arg2, arg3):",
+	"def is_true(ptr, arg1):"
 };
 std::vector<std::string> extern_func_param = {
 	"()",
 	"(ptr)",
 	"(ptr, arg1, arg2, arg3)",
 	"(ptr)",
+	"(ptr, arg1, arg2, arg3)",
+	"(ptr, arg1)",
 	"(retptr, ptr, arg1, arg2, arg3)",
-	"(retptr, ptr)"
+	"(retptr, ptr)",
+	"(retptr, ptr, arg1, arg2, arg3)",
+	"(retptr, ptr, arg1)"
 };
 
 std::string static cppToNumbaType(std::string cppType)
@@ -219,6 +225,18 @@ struct AddIt{
 		container::Binding<CallFn, int(void*)>>
 	STable;
 };
+struct SubArgs{
+	struct CallFn{};
+	typedef StaticTable<
+		container::Binding<CallFn, float(void*, float, bool, float)>>
+	STable;
+};
+struct IsTrue{
+	struct CallFn{};
+	typedef StaticTable<
+		container::Binding<CallFn, bool(void*, bool)>>
+	STable;
+};
 
 template <typename T>
 struct PrintImplMeta{
@@ -313,6 +331,48 @@ using AddItModule = context::SimpleModule<
 	Meta<ImplAddIt>,
 	context::RequirementSet<>,
 	context::ImplementationSet<AddIt, FFIEntry<AddIt>>
+>;
+
+
+extern "C" float sub_args(void* ctx, float arg1, bool arg2, float arg3);
+template <typename CONTEXT>
+struct ImplSubArgs{
+	float call(float arg1, bool arg2, float arg3){
+		float result;
+		return sub_args((CONTEXT*)this,arg1, arg2, arg3);
+	}
+	
+typedef StaticTable<
+        container::Binding<
+SubArgs::CallFn, Fn<&ImplSubArgs<CONTEXT>::call>>>
+		STable;
+
+};
+using SubArgsModule = context::SimpleModule<
+	Meta<ImplSubArgs>,
+	context::RequirementSet<>,
+	context::ImplementationSet<SubArgs, FFIEntry<SubArgs>>
+>;
+
+
+extern "C" bool is_true(void* ctx, bool arg1);
+template <typename CONTEXT>
+struct ImplIsTrue{
+	bool call(bool arg1){
+		bool result;
+		return is_true((CONTEXT*)this,arg1);
+	}
+	
+typedef StaticTable<
+        container::Binding<
+IsTrue::CallFn, Fn<&ImplIsTrue<CONTEXT>::call>>>
+		STable;
+
+};
+using IsTrueModule = context::SimpleModule<
+	Meta<ImplIsTrue>,
+	context::RequirementSet<>,
+	context::ImplementationSet<IsTrue, FFIEntry<IsTrue>>
 >;
 
 
@@ -439,6 +499,11 @@ struct FFIGenImpl{
         {
             std::string mangle_func_name = typeid(KEY).name();
             std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
+            size_t pos = typemagic_mangle_name.find("N");
+
+            if (pos != std::string::npos) {
+                typemagic_mangle_name.erase(pos + 1, 1);
+            }
             std::string reg_str_func_name = get_type_name<KEY>();
 
             std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
