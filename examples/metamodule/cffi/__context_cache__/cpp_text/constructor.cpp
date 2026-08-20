@@ -5,13 +5,13 @@
         if (extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct")
         {
             if (is_for_CPU){
-                python_file << "extern_construct = numba.types.ExternalFunction(\n\t\"construct\",\n\tnumba.core.typing.signature(numba.types.voidptr)\n)\n\n";
+                python_file << "extern_construct = nb.types.ExternalFunction(\n\t\"construct\",\n\tnb.core.typing.signature(nb.types.voidptr)\n)\n\n";
                 extern_linker_headers.push_back("extern_construct");               
             }
             else{
                  python_file << "extern_construct_gpu = cuda.declare_device(\n\t\""
-                             << "construct_gpu\", \n\tnumba.core.typing.signature("
-                             << "numba.types.voidptr"
+                             << "construct_gpu\", \n\tnb.core.typing.signature("
+                             << "nb.types.voidptr"
                              << "()))\n\n";
                  extern_linker_headers.push_back("extern_construct_gpu");
             }

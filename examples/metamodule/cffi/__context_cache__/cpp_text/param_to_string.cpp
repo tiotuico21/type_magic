@@ -28,8 +28,8 @@
             {
                 std::string current =
                     (index == 0)
-                        ? "numba." + cppToNumbaType("void*")
-                        : "numba." + cppToNumbaType(str_head_type);
+                        ? "nb." + cppToNumbaType("void*")
+                        : "nb." + cppToNumbaType(str_head_type);
 
                 if (str_types_from_tail.empty())
                     return current;

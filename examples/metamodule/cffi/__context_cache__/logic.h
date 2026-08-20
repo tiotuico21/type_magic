@@ -140,7 +140,11 @@ std::string static cppToNumbaType(std::string cppType)
 }
 
 
+
 std::vector<std::string> extern_linker_headers = {};
+std::vector<std::string> extern_meta_headers = {};
+std::vector<std::string> meta_specialization = {};
+
 template <auto... THING>
 struct Fn
 {
@@ -405,36 +409,257 @@ struct FFIGenImpl{
         header_file.open("cffi.h", std::ios::trunc | std::ios::out);
         cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
         python_file.open("test_ffi.py", std::ios::trunc | std::ios::out);
-
+        std::string meta_code_for_numba = R"(
+from numba import types
+from numba.extending import typeof_impl
+from numba.extending import as_numba_type
+from numba.extending import type_callable
+from numba.extending import models, register_model
+from numba.extending import make_attribute_wrapper
+from numba.extending import overload_attribute
+from numba.extending import lower_builtin
+from numba.core import cgutils
+from numba.extending import unbox, NativeValue
+from contextlib import ExitStack
+from numba.extending import box 
+from numba import njit
+from numba.core.errors import NumbaTypeError
+from numba.core.extending import overload_method
+import numba as nb
+import numpy as np
+from numpy import int64
+        )";
+        python_file << meta_code_for_numba << "\n";
         python_file << "import re\n"
                     << "import sys\n"
-                    << "import numba\n"
                     << "import inspect\n"
                     << "import subprocess\n"
                     << "\n"
                     << "from llvmlite import binding\n"
                     << "\n"
-                    << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n";
+                    << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n\n\n";
+
+        std::string meta_code_declaring_types = R"PY(
+class MyPrint(object):
+    def __init__(self, kind):
+        self.kind = kind
+
+    def __repr__(self):
+        return f"MyPrint({self.kind})"
+
+class MyPrintType(types.Type):
+    def __init__(self,kind):
+        self.kind = kind
+        #do we need to add a kind
+        super(MyPrintType, self).__init__(name=f"MyPrintType({kind})")
+
+my_print_set = {}
+@staticmethod
+def my_print_type(kind):
+    if not kind in my_print_set:
+        my_print_set[kind] = MyPrintType(kind)
+        
+    return my_print_set[kind]        
+        )PY";
+
+        python_file << meta_code_declaring_types << "\n";
+
+        std::string meta_code_overload = R"PY(
+@overload_method(MyPrintType, '__call__')
+def call_overload_2_arg(self, val):
+    return my_print_ext_map[self]
+        )PY";
+
+        python_file << meta_code_overload << "\n";
+
+        std::string meta_code_for_processing_types = R"PY(
+@lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
+def method_impl(context, builder, sig, args):
+    print("METHOD IMPLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
+    typing_context = context.typing_context
+    overload = call_overload_2_arg
+    fnty = typing_context.resolve_value_type(overload)
+    sig = fnty.get_call_type(typing_context, sig.args, {})
+    sig = sig.replace(pysig=nb.core.utils.pysignature(overload))
+
+    call = context.get_function(fnty, sig)
+
+    context.add_linking_libs(getattr(call, 'libs', ()))
+    return call(builder, args)
+
+
+
+@typeof_impl.register(MyPrint)
+def typeof_index(val, c):
+    return my_print_type(val.kind)
+
+#as_numba_type.register(MyPrint, my_print_set)
+
+
+
+
+@type_callable(MyPrint)
+def type_my_print(context):
+    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type, nb.types.void])
+    print(f"Valid type set is : {valid_type_set}")
+    def typer(kind):
+        print("")
+        print("")
+        print("___________________")
+        print("NON INSTANCE TYPE")
+        print(f"FOUND KIND: {kind} with type {type(kind)}")
+        if isinstance(kind,nb.types.TypeRef):
+            print("THIS IS A TYPEREF")
+            kind = kind.instance_type
+        if (isinstance(kind, nb.types.NumberClass)):
+            kind = kind.instance_type
+            print("______________________")
+            print("INSTANCE TYPE")
+            print(kind)
+            print("______________________")
+            print("")
+        if (isinstance(kind, nb.types.Record)):
+            print("THIS IS A RECORD")
+            
+        if kind in valid_type_set:
+                    print("_____________________________________________________")
+                    print("ENTERING VALID TYPE BRANCH")
+                    print("*************vali type")
+                    print("")
+                    print("88888888888888")
+                    print(kind)
+                    print("88888888888888")
+                    print(my_print_type(kind))
+                    print("_____________________________________________________")
+                    print("")
+                    return my_print_type(kind)
+                    
+        else:
+            raise NumbaTypeError(f"Type {kind} not in type set")
+    return typer 
+
+@register_model(MyPrintType)
+class MyPrintModel(models.StructModel):
+    #idt kind is part of self yet
+    def __init__(self, dmm, fe_type):
+        # we were trying to read directly in members for kind
+        members = []
+        models.StructModel.__init__(self, dmm, fe_type, members)
+
+#we need this right
+make_attribute_wrapper(MyPrintType, 'kind', 'kind')
+
+
+@lower_builtin(MyPrint, nb.types.Any)
+def impl_myprint(context, builder, sig, args):
+    typ = sig.return_type
+    #kind = args[0]
+    myprint = cgutils.create_struct_proxy(typ)(context, builder)
+    #  myprint.kind = kind
+    return myprint._getvalue()
+
+
+#do i have to specify multipke typles when assigning myprint
+@unbox(MyPrintType)
+def unbox_interval(typ, obj, c):
+    """
+    Convert a Interval object to a native interval structure.
+    """
+    is_error_ptr = cgutils.alloca_once_value(c.builder, cgutils.false_bit)
+    myprint = cgutils.create_struct_proxy(typ)(c.context, c.builder)
+
+    #with ExitStack() as stack:
+    #    kind_obj = c.pyapi.object_getattr_string(obj, "kind")
+    #    with cgutils.early_exit_if_null(c.builder, stack, kind_obj):
+    #       c.builder.store(cgutils.true_bit, is_error_ptr)
+    #    kind_native = c.unbox(nb.types.Any, kind_obj)
+    #    c.pyapi.decref(kind_obj)
+    #    with cgutils.early_exit_if(c.builder, stack, kind_native.is_error):
+    #       c.builder.store(cgutils.true_bit, is_error_ptr)
+
+     
+    #myprint.kind = kind_native.value
+       
+
+    return NativeValue(myprint._getvalue(), is_error=c.builder.load(is_error_ptr))
+        
+@box(MyPrintType)
+def box_interval(typ, val, c):
+    print(f"type from boxing: {typ}")
+  
+    ret_ptr = cgutils.alloca_once(c.builder, c.pyapi.pyobj)
+    fail_obj = c.pyapi.get_null_object()
+
+    with ExitStack() as stack:
+        #myprint = cgutils.create_struct_proxy(typ)(c.context, c.builder, value=val)
+        #kind_obj = c.box(nb.types.Any, myprint.kind)
+
+        #with cgutils.early_exit_if_null(c.builder, stack, kind_obj):
+        #    c.builder.store(fail_obj, ret_ptr)
+
+        class_obj = c.pyapi.unserialize(c.pyapi.serialize_object(MyPrint))
+        with cgutils.early_exit_if_null(c.builder, stack, class_obj):
+            #c.pyapi.decref(kind_obj)
+            c.builder.store(fail_obj, ret_ptr)
+
+        kind_obj = c.pyapi.unserialize(
+            c.pyapi.serialize_object(typ.kind)
+        )
+
+        #res = c.pyapi.call_function_objargs(class_obj, (kind_obj))
+        res = c.pyapi.call_function_objargs(class_obj, (kind_obj,))
+        c.pyapi.decref(kind_obj)
+        c.pyapi.decref(class_obj)
+        c.builder.store(res, ret_ptr)
+
+    return c.builder.load(ret_ptr)   
+        
+        )PY";
+
+        python_file << meta_code_for_processing_types << "\n";
 
         addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
         addFunctionBody(cpp_file, python_file, is_for_CPU);
         header_file.close();
         cpp_file.close();
 
+     
         for (size_t i = 0; i < extern_func_headers.size(); ++i)
         {
-            python_file << "@numba.njit(cache=False)\n";
+            python_file << "@nb.njit(cache=False)\n";
             python_file << extern_func_headers[i] << "\n\t"
                         << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
         }
+
+        std::string map_contents = "my_print_ext_map = {\n";
+
+        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
+        {
+            map_contents +=
+                "    my_print_type(" +
+                meta_specialization[k] +
+                "): " +
+
+                // Indent every line AFTER the first line
+                indent_after_first_line(
+                    extern_meta_headers[k],
+                    4
+                ) +
+
+                ",\n";
+        }
+
+        map_contents += "}\n\n";
+
+        python_file << map_contents;
 
         /*
         def print_int(ptr, arg1):
 	        return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
         */
-        python_file << "@numba.njit(cache=False)\n";
+        python_file << "@nb.njit(cache=False)\n";
         python_file << "def print_int(ptr, arg1):\n\treturn extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)\n\n";
-
+       
         std::cout << python_file.is_open() << '\n';
         python_file.close();
 
@@ -478,6 +703,27 @@ struct FFIGenImpl{
         }
     }
 
+    // Helper: add indentation to every line AFTER the first line.
+    // The first line stays where it was inserted.
+    std::string indent_after_first_line(
+        const std::string& str,
+        int spaces
+    )
+    {
+        std::string result = str;
+        std::string indent(spaces, ' ');
+
+        for (size_t i = 0; i < result.size(); ++i) {
+            if (result[i] == '\n' && i + 1 < result.size()) {
+                result.insert(i + 1, indent);
+
+                // Skip over the indentation we just inserted
+                i += spaces;
+            }
+        }
+
+        return result;
+    }
 
     template <typename... T>
     struct ReadEveryFunction;
@@ -521,20 +767,51 @@ struct FFIGenImpl{
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
             
-                std::string extern_function_return_type = "numba." + cppToNumbaType(resultType);
+                std::string extern_function_return_type = "nb." + cppToNumbaType(resultType);
                 std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
 
 
                 if (is_for_CPU){
                     //python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
-                    python_file << "extern_" << typemagic_mangle_name << " = numba.types.ExternalFunction(\n\t\""
-                                                << typemagic_mangle_name
-                                                << "\",\n\tnumba.core.typing.signature(\n\t\t"
-                                                << extern_function_return_type + ", \n\t\t"
-                                                << extern_function_param_list
-                                                << "\n\t)\n)\n\n";
-                    //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
-                    extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+                    if (reg_str_func_name.substr(0, 5) == "Print"){
+                        std::cout << "*************KEY: " << reg_str_func_name.substr(0, 5)  << std::endl;
+                        size_t start = reg_str_func_name.find('<');
+                        size_t end = reg_str_func_name.find('>', start);
+
+                        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
+                        
+                        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
+                        meta_specialization.push_back(numba_type);
+                        std::string extern_python_function =
+                        "nb.types.ExternalFunction(\n"
+                        "    \"" + typemagic_mangle_name + "\",\n"
+                        "    nb.core.typing.signature(\n"
+                        "        " + extern_function_return_type + ",\n"
+                        "        " + extern_function_param_list + "\n"
+                        "    )\n"
+                        ")";
+
+                      
+                        extern_meta_headers.push_back(extern_python_function);
+                        std::cout << "\n\n\nNUMBA TYPE: " << numba_type << std::endl;
+
+                    }
+                    else{
+                        std::cout << "Not print: " << get_type_name<KEY>().substr(0, 5)  << std::endl;
+                        
+                        std::string extern_python_function = "extern_" + typemagic_mangle_name + " = nb.types.ExternalFunction(\n\t\""
+                                                + typemagic_mangle_name
+                                                + "\",\n\tnb.core.typing.signature(\n\t\t"
+                                                + extern_function_return_type + ", \n\t\t"
+                                                + extern_function_param_list
+                                                + "\n\t)\n)\n\n";
+
+                        python_file << extern_python_function;
+                        //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
+                        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+                    }
+                   
+                
                     
                     gen_file << "extern \"C\" "
                              << resultType << " " << typemagic_mangle_name << "(" << header << ")"
@@ -571,7 +848,7 @@ struct FFIGenImpl{
                 }
                 else{
                     python_file << "extern_" << toSnakeCase(reg_str_func_name) << "_gpu = cuda.declare_device(\n\t\""
-                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnumba.core.typing.signature("
+                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnb.core.typing.signature("
                                              << extern_function_return_type
                                              << "(" << extern_function_param_list << ")))\n\n";
                     //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
@@ -652,19 +929,21 @@ struct FFIGenImpl{
     };
 
 
+    
+
     void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
         if (extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct")
         {
             if (is_for_CPU){
-                python_file << "extern_construct = numba.types.ExternalFunction(\n\t\"construct\",\n\tnumba.core.typing.signature(numba.types.voidptr)\n)\n\n";
+                python_file << "extern_construct = nb.types.ExternalFunction(\n\t\"construct\",\n\tnb.core.typing.signature(nb.types.voidptr)\n)\n\n";
                 extern_linker_headers.push_back("extern_construct");               
             }
             else{
                  python_file << "extern_construct_gpu = cuda.declare_device(\n\t\""
-                             << "construct_gpu\", \n\tnumba.core.typing.signature("
-                             << "numba.types.voidptr"
+                             << "construct_gpu\", \n\tnb.core.typing.signature("
+                             << "nb.types.voidptr"
                              << "()))\n\n";
                  extern_linker_headers.push_back("extern_construct_gpu");
             }
@@ -719,14 +998,14 @@ struct FFIGenImpl{
         if (extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct")
         {
             if (is_for_CPU){
-                python_file << "extern_destruct = numba.types.ExternalFunction(\n\t\"destructor\",\n\tnumba.core.typing.signature(\n\t\tnumba.types.voidptr, numba.types.voidptr\n\t)\n)\n\n";
+                python_file << "extern_destruct = nb.types.ExternalFunction(\n\t\"destructor\",\n\tnb.core.typing.signature(\n\t\tnb.types.voidptr, nb.types.voidptr\n\t)\n)\n\n";
                 extern_linker_headers.push_back("extern_destruct");
             }
             else{
                 python_file << "extern_destruct_gpu = cuda.declare_device(\n\t\""
-                            << "destructor_gpu\", \n\tnumba.core.typing.signature("
-                            << "numba.types.void"
-                            << "(numba.types.voidptr)))\n\n";
+                            << "destructor_gpu\", \n\tnb.core.typing.signature("
+                            << "nb.types.void"
+                            << "(nb.types.voidptr)))\n\n";
                 extern_linker_headers.push_back("extern_destruct_gpu");
             }
         }
@@ -826,8 +1105,8 @@ struct FFIGenImpl{
             {
                 std::string current =
                     (index == 0)
-                        ? "numba." + cppToNumbaType("void*")
-                        : "numba." + cppToNumbaType(str_head_type);
+                        ? "nb." + cppToNumbaType("void*")
+                        : "nb." + cppToNumbaType(str_head_type);
 
                 if (str_types_from_tail.empty())
                     return current;
@@ -931,6 +1210,10 @@ struct FFIGenImpl{
                  << std::endl
                  << std::endl;
         addConstructor(cpp_file, python_file, true, is_for_CPU);
+        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<Print>::template Generalizes>::type PrintSet;
+        std::cout << "\n\n\n\n****************The set of publically-advertised traits is: "
+                << container::repr::type_name<PrintSet>()
+                << std::endl;
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
         addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true, is_for_CPU);
         addDestructor(cpp_file, python_file, true, is_for_CPU);

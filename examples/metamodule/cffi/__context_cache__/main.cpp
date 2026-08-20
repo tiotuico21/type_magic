@@ -83,7 +83,7 @@ int main()
 
 typedef typename BaseInputState
     ::template SetItem<key::RequirementSet, 
-TypeSet<AddOne, AddIt, SubArgs, IsTrue, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<SubArgs>, FFIEntry<IsTrue>, FFIGen>
+TypeSet<AddOne, AddIt, SubArgs, IsTrue, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<SubArgs>, FFIEntry<IsTrue>, Print<int>, FFIEntry<Print<int>>, Print<float>, FFIEntry<Print<float>>, FFIGen>
 			>::type StandardTraits;
         run<typename context::CreateContextType<StandardTraits>::type>();
         return 0;

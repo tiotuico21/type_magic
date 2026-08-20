@@ -27,6 +27,10 @@
                  << std::endl
                  << std::endl;
         addConstructor(cpp_file, python_file, true, is_for_CPU);
+        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<Print>::template Generalizes>::type PrintSet;
+        std::cout << "\n\n\n\n****************The set of publically-advertised traits is: "
+                << container::repr::type_name<PrintSet>()
+                << std::endl;
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
         addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true, is_for_CPU);
         addDestructor(cpp_file, python_file, true, is_for_CPU);

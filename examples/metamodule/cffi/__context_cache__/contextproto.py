@@ -221,8 +221,10 @@ typedef typename BaseInputState
 
         for fn in fn_list:
             trait_list.append(UtilStrings.make_ffi_wrapper_str(fn))
-        #trait_list.append("Print<int>")
-        #trait_list.append("FFIEntry<Print<int>>")
+        trait_list.append("Print<int>")
+        trait_list.append("FFIEntry<Print<int>>")
+        trait_list.append("Print<float>")
+        trait_list.append("FFIEntry<Print<float>>")
         trait_list.append("FFIGen")
 
         
@@ -308,7 +310,11 @@ std::vector<std::string> extern_func_headers = {
         return str_vector_definition + str_param_list
     
     def make_empty_linker_header_array_str():
-        return r'''std::vector<std::string> extern_linker_headers = {};'''
+        return r'''
+std::vector<std::string> extern_linker_headers = {};
+std::vector<std::string> extern_meta_headers = {};
+std::vector<std::string> meta_specialization = {};
+'''
     
     
     @staticmethod

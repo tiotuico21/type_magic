@@ -65,11 +65,14 @@ def print_record(self, val):
 record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
 my_print_ext_map = {
     my_print_type(nb.types.Integer) : print_int,
+    my_print_type(nb.types.int64) : print_int,
     my_print_type(nb.types.Float) : print_float,
     my_print_type(nb.types.void) : print_void,
     my_print_type(record_type)  : print_record,
 }
-    
+
+
+
 @overload_method(MyPrintType, '__call__')
 def call_overload_2_arg(self,val):
     return my_print_ext_map[self]
@@ -78,13 +81,17 @@ def call_overload_2_arg(self,val):
 def call_overload_1_arg(self):
     return my_print_ext_map[self]
 
+
 call_overload = {
     1 : call_overload_1_arg,
     2 : call_overload_2_arg,
 }
 
+
+
 @lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
 def method_impl(context, builder, sig, args):
+    print("METHOD IMPLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
     typing_context = context.typing_context
     overload = call_overload[len(sig.args)]
     fnty = typing_context.resolve_value_type(overload)
@@ -109,7 +116,7 @@ def typeof_index(val, c):
 
 @type_callable(MyPrint)
 def type_my_print(context):
-    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type])
+    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type, nb.types.void])
     print(f"Valid type set is : {valid_type_set}")
     def typer(kind):
         print("")
@@ -238,9 +245,11 @@ def makeInstanceList(trait_list):
 
 @njit
 def foo(myinstance):
+    print("ENTERING FOOOOOOOOOOO")
     myinstance(1)
-    MyPrint(nb.float64)
-    #MyPrint(nb.types.void)()
+    #MyPrint(nb.float64)
+    print("DOING VOID")
+   # MyPrint(nb.types.void)()
 
 numba_dtype = record_type
 
@@ -253,12 +262,11 @@ print(numba_dtype)
 print("___________________-")
 print("")
 #ret = makeInstance(nb.types.Integer)
-ret = makeInstance(nb.int64)
-foo(ret)
+#foo(ret)
 ret = makeInstance(nb.types.void)
 foo(ret)
-ret = makeInstance(numba_dtype)
-foo(ret)
+#ret = makeInstance(numba_dtype)
+#foo(ret)
 #retList = makeInstanceList([ret, nb.types.Integer, nb.types.Float, nb.types.Boolean])
 
 print("")

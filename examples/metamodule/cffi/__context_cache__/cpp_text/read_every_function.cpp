@@ -1,3 +1,24 @@
+    // Helper: add indentation to every line AFTER the first line.
+    // The first line stays where it was inserted.
+    std::string indent_after_first_line(
+        const std::string& str,
+        int spaces
+    )
+    {
+        std::string result = str;
+        std::string indent(spaces, ' ');
+
+        for (size_t i = 0; i < result.size(); ++i) {
+            if (result[i] == '\n' && i + 1 < result.size()) {
+                result.insert(i + 1, indent);
+
+                // Skip over the indentation we just inserted
+                i += spaces;
+            }
+        }
+
+        return result;
+    }
 
     template <typename... T>
     struct ReadEveryFunction;
@@ -41,20 +62,51 @@
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
             
-                std::string extern_function_return_type = "numba." + cppToNumbaType(resultType);
+                std::string extern_function_return_type = "nb." + cppToNumbaType(resultType);
                 std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
 
 
                 if (is_for_CPU){
                     //python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
-                    python_file << "extern_" << typemagic_mangle_name << " = numba.types.ExternalFunction(\n\t\""
-                                                << typemagic_mangle_name
-                                                << "\",\n\tnumba.core.typing.signature(\n\t\t"
-                                                << extern_function_return_type + ", \n\t\t"
-                                                << extern_function_param_list
-                                                << "\n\t)\n)\n\n";
-                    //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
-                    extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+                    if (reg_str_func_name.substr(0, 5) == "Print"){
+                        std::cout << "*************KEY: " << reg_str_func_name.substr(0, 5)  << std::endl;
+                        size_t start = reg_str_func_name.find('<');
+                        size_t end = reg_str_func_name.find('>', start);
+
+                        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
+                        
+                        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
+                        meta_specialization.push_back(numba_type);
+                        std::string extern_python_function =
+                        "nb.types.ExternalFunction(\n"
+                        "    \"" + typemagic_mangle_name + "\",\n"
+                        "    nb.core.typing.signature(\n"
+                        "        " + extern_function_return_type + ",\n"
+                        "        " + extern_function_param_list + "\n"
+                        "    )\n"
+                        ")";
+
+                      
+                        extern_meta_headers.push_back(extern_python_function);
+                        std::cout << "\n\n\nNUMBA TYPE: " << numba_type << std::endl;
+
+                    }
+                    else{
+                        std::cout << "Not print: " << get_type_name<KEY>().substr(0, 5)  << std::endl;
+                        
+                        std::string extern_python_function = "extern_" + typemagic_mangle_name + " = nb.types.ExternalFunction(\n\t\""
+                                                + typemagic_mangle_name
+                                                + "\",\n\tnb.core.typing.signature(\n\t\t"
+                                                + extern_function_return_type + ", \n\t\t"
+                                                + extern_function_param_list
+                                                + "\n\t)\n)\n\n";
+
+                        python_file << extern_python_function;
+                        //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
+                        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+                    }
+                   
+                
                     
                     gen_file << "extern \"C\" "
                              << resultType << " " << typemagic_mangle_name << "(" << header << ")"
@@ -91,7 +143,7 @@
                 }
                 else{
                     python_file << "extern_" << toSnakeCase(reg_str_func_name) << "_gpu = cuda.declare_device(\n\t\""
-                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnumba.core.typing.signature("
+                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnb.core.typing.signature("
                                              << extern_function_return_type
                                              << "(" << extern_function_param_list << ")))\n\n";
                     //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
@@ -171,3 +223,5 @@
         }
     };
 
+
+    
