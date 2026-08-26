@@ -62,10 +62,58 @@ def my_print_type(kind):
 
         python_file << meta_code_declaring_types << "\n";
 
+        
+        addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
+        addFunctionBody(cpp_file, python_file, is_for_CPU);
+        header_file.close();
+        cpp_file.close();
+
+        /*
+        for (size_t i = 0; i < extern_func_headers.size(); ++i)
+        {
+            python_file << "@nb.njit(cache=False)\n";
+            python_file << extern_func_headers[i] << "\n\t"
+                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
+        }
+        
+
+        std::string map_contents = "my_print_ext_map = {\n";
+
+        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
+        {
+            map_contents +=
+                "    my_print_type(" +
+                meta_specialization[k] +
+                "): " +
+
+                // Indent every line AFTER the first line
+                indent_after_first_line(
+                    extern_meta_headers[k],
+                    4
+                ) +
+
+                ",\n";
+        }
+
+        map_contents += "}\n\n";
+
+        python_file << map_contents;
+        */
         std::string meta_code_overload = R"PY(
+record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
+#@overload_method(MyPrintType, '__call__')
+#def call_overload_2_arg(self, val):
+#    extern_fn = my_print_ext_map[self]
+
 @overload_method(MyPrintType, '__call__')
-def call_overload_2_arg(self, val):
-    return my_print_ext_map[self]
+def call_overload_ffi(self, ctx, val):
+
+    extern_fn = my_print_ext_map[self]
+
+    def impl(self, ctx, val):
+        return extern_fn(ctx, val)
+
+    return impl
         )PY";
 
         python_file << meta_code_overload << "\n";
@@ -75,7 +123,7 @@ def call_overload_2_arg(self, val):
 def method_impl(context, builder, sig, args):
     print("METHOD IMPLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
     typing_context = context.typing_context
-    overload = call_overload_2_arg
+    overload = call_overload_ffi
     fnty = typing_context.resolve_value_type(overload)
     sig = fnty.get_call_type(typing_context, sig.args, {})
     sig = sig.replace(pysig=nb.core.utils.pysignature(overload))
@@ -98,7 +146,7 @@ def typeof_index(val, c):
 
 @type_callable(MyPrint)
 def type_my_print(context):
-    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type, nb.types.void])
+    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.int32, nb.types.float64, nb.types.float32, record_type, nb.types.void])
     print(f"Valid type set is : {valid_type_set}")
     def typer(kind):
         print("")
@@ -212,52 +260,16 @@ def box_interval(typ, val, c):
 
     return c.builder.load(ret_ptr)   
         
+        
         )PY";
 
         python_file << meta_code_for_processing_types << "\n";
 
-        addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
-        addFunctionBody(cpp_file, python_file, is_for_CPU);
-        header_file.close();
-        cpp_file.close();
-
-     
-        for (size_t i = 0; i < extern_func_headers.size(); ++i)
-        {
-            python_file << "@nb.njit(cache=False)\n";
-            python_file << extern_func_headers[i] << "\n\t"
-                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
-        }
-
-        std::string map_contents = "my_print_ext_map = {\n";
-
-        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
-        {
-            map_contents +=
-                "    my_print_type(" +
-                meta_specialization[k] +
-                "): " +
-
-                // Indent every line AFTER the first line
-                indent_after_first_line(
-                    extern_meta_headers[k],
-                    4
-                ) +
-
-                ",\n";
-        }
-
-        map_contents += "}\n\n";
-
-        python_file << map_contents;
 
         /*
         def print_int(ptr, arg1):
 	        return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
         */
-        python_file << "@nb.njit(cache=False)\n";
-        python_file << "def print_int(ptr, arg1):\n\treturn extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)\n\n";
-       
         std::cout << python_file.is_open() << '\n';
         python_file.close();
 

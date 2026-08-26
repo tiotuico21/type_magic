@@ -11,3 +11,4 @@ def go_fast(a): # Function is compiled to machine code when called the first tim
     return a + trace              # Numba likes NumPy broadcasting
 
 print(go_fast(x))
+

@@ -2,18 +2,22 @@
     void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
-        if (extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct")
+        if ((extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct") && isCpp)
         {
             if (is_for_CPU){
                 python_file << "extern_destruct = nb.types.ExternalFunction(\n\t\"destructor\",\n\tnb.core.typing.signature(\n\t\tnb.types.voidptr, nb.types.voidptr\n\t)\n)\n\n";
-                extern_linker_headers.push_back("extern_destruct");
+                python_file << "@nb.njit(cache=False)\n"
+                        << "def destruct(ptr):\n\t"
+                        << "return destruct(ptr)\n\n";          
             }
             else{
                 python_file << "extern_destruct_gpu = cuda.declare_device(\n\t\""
                             << "destructor_gpu\", \n\tnb.core.typing.signature("
                             << "nb.types.void"
                             << "(nb.types.voidptr)))\n\n";
-                extern_linker_headers.push_back("extern_destruct_gpu");
+                python_file << "@nb.njit(cache=False)\n"
+                    << "def destruct(ptr):\n\t"
+                    << "return destruct(ptr)\n\n";
             }
         }
 

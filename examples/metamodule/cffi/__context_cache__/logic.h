@@ -2,6 +2,7 @@
 #include "../../../../include/include.h"
 
 #include <chrono>
+#include "boot_start.h"
 #include <thread>
 
 #include <functional>
@@ -312,7 +313,7 @@ AddOne::CallFn, Fn<&ImplAddOne<CONTEXT>::call>>>
 };
 using AddOneModule = context::SimpleModule<
 	Meta<ImplAddOne>,
-	context::RequirementSet<>,
+	context::RequirementSet<SubOne>,
 	context::ImplementationSet<AddOne, FFIEntry<AddOne>>
 >;
 
@@ -464,10 +465,58 @@ def my_print_type(kind):
 
         python_file << meta_code_declaring_types << "\n";
 
+        
+        addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
+        addFunctionBody(cpp_file, python_file, is_for_CPU);
+        header_file.close();
+        cpp_file.close();
+
+        /*
+        for (size_t i = 0; i < extern_func_headers.size(); ++i)
+        {
+            python_file << "@nb.njit(cache=False)\n";
+            python_file << extern_func_headers[i] << "\n\t"
+                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
+        }
+        
+
+        std::string map_contents = "my_print_ext_map = {\n";
+
+        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
+        {
+            map_contents +=
+                "    my_print_type(" +
+                meta_specialization[k] +
+                "): " +
+
+                // Indent every line AFTER the first line
+                indent_after_first_line(
+                    extern_meta_headers[k],
+                    4
+                ) +
+
+                ",\n";
+        }
+
+        map_contents += "}\n\n";
+
+        python_file << map_contents;
+        */
         std::string meta_code_overload = R"PY(
+record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
+#@overload_method(MyPrintType, '__call__')
+#def call_overload_2_arg(self, val):
+#    extern_fn = my_print_ext_map[self]
+
 @overload_method(MyPrintType, '__call__')
-def call_overload_2_arg(self, val):
-    return my_print_ext_map[self]
+def call_overload_ffi(self, ctx, val):
+
+    extern_fn = my_print_ext_map[self]
+
+    def impl(self, ctx, val):
+        return extern_fn(ctx, val)
+
+    return impl
         )PY";
 
         python_file << meta_code_overload << "\n";
@@ -477,7 +526,7 @@ def call_overload_2_arg(self, val):
 def method_impl(context, builder, sig, args):
     print("METHOD IMPLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
     typing_context = context.typing_context
-    overload = call_overload_2_arg
+    overload = call_overload_ffi
     fnty = typing_context.resolve_value_type(overload)
     sig = fnty.get_call_type(typing_context, sig.args, {})
     sig = sig.replace(pysig=nb.core.utils.pysignature(overload))
@@ -500,7 +549,7 @@ def typeof_index(val, c):
 
 @type_callable(MyPrint)
 def type_my_print(context):
-    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.float64,record_type, nb.types.void])
+    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.int32, nb.types.float64, nb.types.float32, record_type, nb.types.void])
     print(f"Valid type set is : {valid_type_set}")
     def typer(kind):
         print("")
@@ -614,52 +663,16 @@ def box_interval(typ, val, c):
 
     return c.builder.load(ret_ptr)   
         
+        
         )PY";
 
         python_file << meta_code_for_processing_types << "\n";
 
-        addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
-        addFunctionBody(cpp_file, python_file, is_for_CPU);
-        header_file.close();
-        cpp_file.close();
-
-     
-        for (size_t i = 0; i < extern_func_headers.size(); ++i)
-        {
-            python_file << "@nb.njit(cache=False)\n";
-            python_file << extern_func_headers[i] << "\n\t"
-                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
-        }
-
-        std::string map_contents = "my_print_ext_map = {\n";
-
-        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
-        {
-            map_contents +=
-                "    my_print_type(" +
-                meta_specialization[k] +
-                "): " +
-
-                // Indent every line AFTER the first line
-                indent_after_first_line(
-                    extern_meta_headers[k],
-                    4
-                ) +
-
-                ",\n";
-        }
-
-        map_contents += "}\n\n";
-
-        python_file << map_contents;
 
         /*
         def print_int(ptr, arg1):
 	        return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
         */
-        python_file << "@nb.njit(cache=False)\n";
-        python_file << "def print_int(ptr, arg1):\n\treturn extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)\n\n";
-       
         std::cout << python_file.is_open() << '\n';
         python_file.close();
 
@@ -725,6 +738,166 @@ def box_interval(typ, val, c):
         return result;
     }
 
+
+    static void write_extern_to_python_file_cpu(std::fstream &python_file,
+                                    std::string typemagic_mangle_name,
+                                    std::string extern_function_return_type,
+                                    std::string extern_function_param_list){
+        //std::cout << "Not print: " << get_type_name<KEY>().substr(0, 5)  << std::endl;
+                    
+        std::string extern_python_function = "extern_" + typemagic_mangle_name + " = nb.types.ExternalFunction(\n\t\""
+                                + typemagic_mangle_name
+                                + "\",\n\tnb.core.typing.signature(\n\t\t"
+                                + extern_function_return_type + ", \n\t\t"
+                                + extern_function_param_list
+                                + "\n\t)\n)\n\n";
+
+        python_file << extern_python_function;
+        //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
+        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+
+    }
+
+
+    static void write_extern_to_python_file_gpu(std::fstream &python_file,
+                                                std::string reg_str_func_name,
+                                                std::string typemagic_mangle_name,
+                                                std::string extern_function_return_type,
+                                                std::string extern_function_param_list){
+         python_file << "extern_" << toSnakeCase(reg_str_func_name) << "_gpu = cuda.declare_device(\n\t\""
+                    << typemagic_mangle_name + "_gpu" << "\", \n\tnb.core.typing.signature("
+                    << extern_function_return_type
+                    << "(" << extern_function_param_list << ")))\n\n";
+        //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
+        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+    }
+    static void write_function_to_cpp_file_cpu(std::fstream &gen_file,
+                                  std::string resultType,
+                                  std::string typemagic_mangle_name,
+                                  std::string header,
+                                  std::string traitName,
+                                  std::string reg_str_func_name,
+                                  std::string arg_list){
+        gen_file << "extern \"C\" "
+                << resultType << " " << typemagic_mangle_name << "(" << header << ")"
+                << "{"
+                << std::endl
+                << "\t"
+                << get_type_name<CONTEXT>()
+                << "* ptr = ("
+                << get_type_name<CONTEXT>()
+                << "*) arg0;"
+                << std::endl
+                << "\treturn As<"
+                << traitName
+                << ", "
+                << get_type_name<CONTEXT>()
+                << ">::STable::template call<typename "
+                << reg_str_func_name
+                << ">(&(as<"
+                << traitName;
+        if (arg_list.size() == 0)
+        {
+            gen_file << ">(*ptr)));";
+        }
+        else
+        {
+            gen_file << ">(*ptr)), "
+                        << arg_list
+                        << ");";
+        }
+        gen_file << std::endl
+                    << "}"
+                    << std::endl;
+    
+    }
+
+
+    static void write_function_to_cpp_file_gpu(std::fstream &gen_file,
+                                               std::string typemagic_mangle_name,
+                                               std::string resultType,
+                                               std::string header,
+                                               std::string traitName,
+                                               std::string reg_str_func_name,
+                                               std::string arg_list){
+        gen_file << "extern \"C\" "
+                << "int" << " " << typemagic_mangle_name + "_gpu" << "(" << resultType + "* retptr, " + header << ")"
+                << "{"
+                << std::endl
+                << "\t"
+                << get_type_name<CONTEXT>()
+                << "* ptr = ("
+                << get_type_name<CONTEXT>()
+                << "*) arg0;"
+                << std::endl
+                << "\t*retptr = As<"
+                << traitName
+                << ", "
+                << get_type_name<CONTEXT>()
+                << ">::STable::template call<typename "
+                << reg_str_func_name
+                << ">(&(as<"
+                << traitName;
+        if (arg_list.size() == 0)
+        {
+            gen_file << ">(*ptr)));";
+        }
+        else
+        {
+            gen_file << ">(*ptr)), "
+                        << arg_list
+                        << ");";
+        }
+        gen_file << std::endl
+                    << "\treturn 1;"
+                    << "\n}"
+                    << std::endl;
+    }
+   
+    static void write_header_to_cpp_file_cpu(std::fstream &gen_file,
+                                             std::string resultType,
+                                             std::string typemagic_mangle_name,
+                                             std::string header)
+    {
+        gen_file << "extern \"C\" "
+            << resultType
+            << " "
+            << typemagic_mangle_name
+            << "("
+            << header
+            << ")"
+            << ";"
+            << std::endl;
+    }
+
+    static void write_header_to_cpp_file_gpu(std::fstream &gen_file,
+                                             std::string resultType,
+                                             std::string typemagic_mangle_name,
+                                             std::string header)
+    {
+        gen_file << "extern \"C\" "
+            << "int"
+            << " "
+            << typemagic_mangle_name + "_gpu"
+            << "("
+            << resultType + "* retptr, " + header
+            << ")"
+            << ";"
+            << std::endl;
+    }
+
+    static std::string make_njit_param_list(int param_amount){
+        std::string param_list = "ptr";
+        if (param_amount == 0){
+            return "ptr";
+        }
+        for (int i = 1; i <= param_amount; i++){
+            std::string arg = "arg" + std::to_string(i);
+            param_list += ", " + arg;
+        }
+        return param_list;
+    }
+   
     template <typename... T>
     struct ReadEveryFunction;
 
@@ -758,6 +931,10 @@ def box_interval(typ, val, c):
             {
                 typedef typename ITEM::Args method_args_list;
 
+                std::cout << "\n\nITEMMMMMMM COUNT" << std::endl;
+                std::cout << method_args_list::MapType::ITEM_COUNT << std::endl;
+                int param_amount = method_args_list::MapType::ITEM_COUNT;
+
                 typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
                 typedef typename outter_args_list::template PopFront<CONTEXT *>::type inner_args_list;
                 std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
@@ -773,118 +950,70 @@ def box_interval(typ, val, c):
 
                 if (is_for_CPU){
                     //python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
-                    if (reg_str_func_name.substr(0, 5) == "Print"){
-                        std::cout << "*************KEY: " << reg_str_func_name.substr(0, 5)  << std::endl;
-                        size_t start = reg_str_func_name.find('<');
-                        size_t end = reg_str_func_name.find('>', start);
-
-                        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
-                        
-                        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
-                        meta_specialization.push_back(numba_type);
-                        std::string extern_python_function =
-                        "nb.types.ExternalFunction(\n"
-                        "    \"" + typemagic_mangle_name + "\",\n"
-                        "    nb.core.typing.signature(\n"
-                        "        " + extern_function_return_type + ",\n"
-                        "        " + extern_function_param_list + "\n"
-                        "    )\n"
-                        ")";
-
-                      
-                        extern_meta_headers.push_back(extern_python_function);
-                        std::cout << "\n\n\nNUMBA TYPE: " << numba_type << std::endl;
-
-                    }
-                    else{
-                        std::cout << "Not print: " << get_type_name<KEY>().substr(0, 5)  << std::endl;
-                        
-                        std::string extern_python_function = "extern_" + typemagic_mangle_name + " = nb.types.ExternalFunction(\n\t\""
-                                                + typemagic_mangle_name
-                                                + "\",\n\tnb.core.typing.signature(\n\t\t"
-                                                + extern_function_return_type + ", \n\t\t"
-                                                + extern_function_param_list
-                                                + "\n\t)\n)\n\n";
-
-                        python_file << extern_python_function;
-                        //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name));
-                        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
-                    }
-                   
-                
                     
-                    gen_file << "extern \"C\" "
-                             << resultType << " " << typemagic_mangle_name << "(" << header << ")"
-                             << "{"
-                             << std::endl
-                             << "\t"
-                             << get_type_name<CONTEXT>()
-                             << "* ptr = ("
-                             << get_type_name<CONTEXT>()
-                             << "*) arg0;"
-                             << std::endl
-                             << "\treturn As<"
-                             << traitName
-                             << ", "
-                             << get_type_name<CONTEXT>()
-                             << ">::STable::template call<typename "
-                             << reg_str_func_name
-                             << ">(&(as<"
-                             << traitName;
-                    if (arg_list.size() == 0)
-                    {
-                        gen_file << ">(*ptr)));";
-                    }
-                    else
-                    {
-                        gen_file << ">(*ptr)), "
-                                    << arg_list
-                                    << ");";
-                    }
-                    gen_file << std::endl
-                             << "}"
-                             << std::endl;
+                  
+                        /*
+                        @nb.njit(cache=False)
+                    def add_one(ptr, arg1, arg2, arg3):
+                        return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
+
+                        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
+
+                          for (size_t i = 0; i < extern_func_headers.size(); ++i)
+        {
+            python_file << "@nb.njit(cache=False)\n";
+            python_file << extern_func_headers[i] << "\n\t"
+                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
+        }
+                        */
+                
+                    write_extern_to_python_file_cpu(python_file,
+                                                typemagic_mangle_name, 
+                                                extern_function_return_type,
+                                                extern_function_param_list);
+
+                    write_function_to_cpp_file_cpu(gen_file,
+                                               resultType,
+                                               typemagic_mangle_name,
+                                               header,
+                                               traitName, 
+                                               reg_str_func_name,
+                                               arg_list);
+
+                    python_file << "@nb.njit(cache=False)\n";
+                    std::string njit_param_list = make_njit_param_list(param_amount);
+                    python_file << "def " + toSnakeCase(traitName) + "(" + njit_param_list + "):\n\t"
+                                << "return extern_" << typemagic_mangle_name
+                                << "(" << njit_param_list + ")\n\n";
+
+                
+
+
+                    /*
+                    @nb.njit(cache=False)
+                    def add_one(ptr, arg1, arg2, arg3):
+                        return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
+
+                    */
+
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 else{
-                    python_file << "extern_" << toSnakeCase(reg_str_func_name) << "_gpu = cuda.declare_device(\n\t\""
-                                             << typemagic_mangle_name + "_gpu" << "\", \n\tnb.core.typing.signature("
-                                             << extern_function_return_type
-                                             << "(" << extern_function_param_list << ")))\n\n";
+
+                    write_extern_to_python_file_gpu(python_file,
+                                                    reg_str_func_name,
+                                                    typemagic_mangle_name, 
+                                                    extern_function_return_type,
+                                                    extern_function_param_list);
                     //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
-                    extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
-                    gen_file << "extern \"C\" "
-                             << "int" << " " << typemagic_mangle_name + "_gpu" << "(" << resultType + "* retptr, " + header << ")"
-                             << "{"
-                             << std::endl
-                             << "\t"
-                             << get_type_name<CONTEXT>()
-                             << "* ptr = ("
-                             << get_type_name<CONTEXT>()
-                             << "*) arg0;"
-                             << std::endl
-                             << "\t*retptr = As<"
-                             << traitName
-                             << ", "
-                             << get_type_name<CONTEXT>()
-                             << ">::STable::template call<typename "
-                             << reg_str_func_name
-                             << ">(&(as<"
-                             << traitName;
-                    if (arg_list.size() == 0)
-                    {
-                        gen_file << ">(*ptr)));";
-                    }
-                    else
-                    {
-                        gen_file << ">(*ptr)), "
-                                    << arg_list
-                                    << ");";
-                    }
-                    gen_file << std::endl
-                                << "\treturn 1;"
-                                << "\n}"
-                                << std::endl;
+                   
+                    write_function_to_cpp_file_gpu(gen_file,
+                                                   typemagic_mangle_name,
+                                                   resultType,
+                                                   header,
+                                                   traitName, 
+                                                   reg_str_func_name,
+                                                   arg_list);
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
             }
@@ -899,27 +1028,17 @@ def box_interval(typ, val, c):
                 std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
 
                 if (is_for_CPU){
-                    gen_file << "extern \"C\" "
-                             << resultType
-                             << " "
-                             << typemagic_mangle_name
-                             << "("
-                             << header
-                             << ")"
-                             << ";"
-                             << std::endl;
+                    write_header_to_cpp_file_cpu(gen_file,
+                                                 resultType,
+                                                 typemagic_mangle_name,
+                                                 header);
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 else{
-                   gen_file << "extern \"C\" "
-                            << "int"
-                            << " "
-                            << typemagic_mangle_name + "_gpu"
-                            << "("
-                            << resultType + "* retptr, " + header
-                            << ")"
-                            << ";"
-                            << std::endl;
+                    write_header_to_cpp_file_cpu(gen_file,
+                                                 resultType,
+                                                 typemagic_mangle_name,
+                                                 header);
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 
@@ -934,18 +1053,28 @@ def box_interval(typ, val, c):
     void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
-        if (extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct")
+        if ((extern_linker_headers.size() == 0 || extern_linker_headers[0] != "extern_construct") && isCpp)
         {
             if (is_for_CPU){
                 python_file << "extern_construct = nb.types.ExternalFunction(\n\t\"construct\",\n\tnb.core.typing.signature(nb.types.voidptr)\n)\n\n";
-                extern_linker_headers.push_back("extern_construct");               
+                python_file << "@nb.njit(cache=False)\n"
+                            << "def construct():\n\t"
+                            << "return extern_construct()\n\n";               
             }
             else{
-                 python_file << "extern_construct_gpu = cuda.declare_device(\n\t\""
-                             << "construct_gpu\", \n\tnb.core.typing.signature("
-                             << "nb.types.voidptr"
-                             << "()))\n\n";
-                 extern_linker_headers.push_back("extern_construct_gpu");
+                python_file << "extern_construct_gpu = cuda.declare_device(\n\t\""
+                            << "construct_gpu\", \n\tnb.core.typing.signature("
+                            << "nb.types.voidptr"
+                            << "()))\n\n";
+                /*
+                @nb.njit(cache=False)
+                def construct():
+                    return extern_construct()
+                */
+                python_file << "@nb.njit(cache=False)\n"
+                            << "def construct():\n\t"
+                            << "return extern_construct()\n\n";
+
             }
         }
  
@@ -995,18 +1124,22 @@ def box_interval(typ, val, c):
     void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
-        if (extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct")
+        if ((extern_linker_headers.size() <= 1 || extern_linker_headers[1] != "extern_destruct") && isCpp)
         {
             if (is_for_CPU){
                 python_file << "extern_destruct = nb.types.ExternalFunction(\n\t\"destructor\",\n\tnb.core.typing.signature(\n\t\tnb.types.voidptr, nb.types.voidptr\n\t)\n)\n\n";
-                extern_linker_headers.push_back("extern_destruct");
+                python_file << "@nb.njit(cache=False)\n"
+                        << "def destruct(ptr):\n\t"
+                        << "return destruct(ptr)\n\n";          
             }
             else{
                 python_file << "extern_destruct_gpu = cuda.declare_device(\n\t\""
                             << "destructor_gpu\", \n\tnb.core.typing.signature("
                             << "nb.types.void"
                             << "(nb.types.voidptr)))\n\n";
-                extern_linker_headers.push_back("extern_destruct_gpu");
+                python_file << "@nb.njit(cache=False)\n"
+                    << "def destruct(ptr):\n\t"
+                    << "return destruct(ptr)\n\n";
             }
         }
 
@@ -1076,6 +1209,59 @@ def box_interval(typ, val, c):
     }
 
 
+    static std::string toSnakeCaseMeta(const std::string& trait_name)
+    {
+        size_t start = trait_name.find('<');
+        size_t end = trait_name.rfind('>');
+
+        // No <...> found: just snake-case the whole name
+        if (start == std::string::npos ||
+            end == std::string::npos ||
+            end <= start)
+        {
+            return trait_name;
+        }
+
+        // Get "Meta" and "Print"
+        std::string prefix = trait_name.substr(0, start);
+        std::string inner  = trait_name.substr(start + 1, end - start - 1);
+
+        std::string result;
+
+        // Add prefix: Meta -> meta
+        for (char c : prefix)
+        {
+            result += static_cast<char>(
+                std::tolower(static_cast<unsigned char>(c))
+            );
+        }
+
+        // Add underscore between Meta and Print
+        result += '_';
+
+        // Convert inner to snake_case
+        for (size_t i = 0; i < inner.size(); ++i)
+        {
+            unsigned char c = static_cast<unsigned char>(inner[i]);
+
+            if (std::isupper(c))
+            {
+                // Add _ before uppercase letters, except the first character
+                if (i != 0 && inner[i - 1] != '_')
+                {
+                    result += '_';
+                }
+
+                result += static_cast<char>(std::tolower(c));
+            }
+            else
+            {
+                result += inner[i];
+            }
+        }
+
+        return result;
+    }
     template <typename T>
     struct ParamListToString;
 
@@ -1182,7 +1368,350 @@ def box_interval(typ, val, c):
     }
 
 
-     void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
+    template <typename T>
+    struct IsSpecialization{
+        static constexpr bool value = false;
+    };
+    
+    template <template<typename...>typename TEMPLATE, typename T>
+    struct IsSpecialization<TEMPLATE<T>>{
+        static constexpr bool value = true;
+    };
+    template <typename T>
+    struct GetTemplate{
+        typedef T type;
+    };
+
+    template <template <typename...>typename TEMPLATE, typename T>
+    struct GetTemplate<TEMPLATE<T>>{
+        typedef Meta<TEMPLATE> type;
+    };
+
+    template <typename TRAITMAP>
+    struct FFIDetector {
+        template <typename TRAIT>
+        struct HasFFI{
+            static constexpr bool value = TRAITMAP::template has_key<TRAIT>() && TRAITMAP::template has_key<FFIEntry<TRAIT>>();
+        };
+    };
+
+
+    /*
+    template <typename T>
+void put_in_dict_file(std::fstream& dict_file){
+    using namespace container;
+    using namespace context;
+
+    if constexpr (std::is_same<T, container::TypeSet<>>::value)
+    {
+        return;
+    }
+    else{
+        typedef typename T::MapType::HeadItemType CurrTrait;
+
+        if (IsMeta<CurrTrait>::value){
+            std::string FullTrait = container::repr::type_name<CurrTrait>();
+            size_t start = FullTrait.find('<');
+            size_t end = FullTrait.find('>', start); 
+
+            std::string InnerTrait = FullTrait.substr(start + 1, end - start -1);
+            
+            dict_file << "def " << InnerTrait << "(*args):";
+            dict_file << "\n\treturn {cpp_name: \"" << InnerTrait
+                      << "<\"+\",\".join(*args)+\">\"}\n";
+            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
+        }
+        else{
+            typedef typename T::MapType::HeadItemType CurrTrait;
+            dict_file << container::repr::type_name<CurrTrait>();
+            dict_file << " = { cpp_name: \"" << container::repr::type_name<CurrTrait>() << "\"}\n\n";
+            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
+        }
+         
+    }
+}
+    */
+    //CFFIMeta::KeySet::template FIler<M::template Generalizes>::type my_meta_set
+
+
+    /*
+      std::cout << "*************KEY: " << reg_str_func_name.substr(0, 5)  << std::endl;
+                        size_t start = reg_str_func_name.find('<');
+                        size_t end = reg_str_func_name.find('>', start);
+
+                        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
+                        
+                        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
+                        meta_specialization.push_back(numba_type);
+                        std::string extern_python_function =
+                        "nb.types.ExternalFunction(\n"
+                        "    \"" + typemagic_mangle_name + "\",\n"
+                        "    nb.core.typing.signature(\n"
+                        "        " + extern_function_return_type + ",\n"
+                        "        " + extern_function_param_list + "\n"
+                        "    )\n"
+                        ")";
+
+                      
+                        extern_meta_headers.push_back(extern_python_function);
+    */
+
+    /*
+    
+    template <typename... T>
+    struct ReadEveryFunction;
+
+    template <typename... TAIL>
+    struct ReadEveryFunction<container::TypeMap<TAIL...>>
+    {
+
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
+        {
+            return;
+        }
+    };
+
+    template <typename KEY, typename ITEM, typename... TAIL>
+    struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
+    {
+        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
+        {
+
+         typedef typename T::MapType::HeadItemType CurrFFISpec;
+            typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
+            std::string typenameMangle = typeid(CurrTrait).name();
+            std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
+            std::string trait_name = get_type_name<CurrTrait>();
+            std::string trait_name_snake_case = toSnakeCase(trait_name);
+
+            typedef As<CurrTrait, CONTEXT> sig_component;
+
+            std::string func_sig = get_type_name<CONTEXT>(); 
+            if (isCpp)
+            {
+                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_n
+    */
+    template <typename T>
+    void handle_every_generic_trait(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU){
+        if constexpr(std::is_same<T, container::TypeSet<>>::value){
+            return;
+        }
+        else{
+            typedef typename T::MapType::HeadItemType CurrTrait; 
+            std::cout << "\n\nHEad: " << container::repr::type_name<CurrTrait>() << "/n/n" << std::endl;
+         
+
+            typedef typename  CONTEXT::TraitMap::KeySet::template Filter<CurrTrait::template Generalizes>::type MyMetaSet;
+            std::string meta_trait_name = get_type_name<CurrTrait>();
+            std::string meta_camel_name = toSnakeCaseMeta(meta_trait_name);
+            std::cout << meta_camel_name << std::endl;
+            std::cout << "METAAAAAAAAA SET:" << container::repr::type_name<MyMetaSet>() << "/n/n" << std::endl;
+            
+            make_extern_map_for_single_meta_trait<MyMetaSet>(gen_file, python_file, meta_camel_name, isCpp, is_for_CPU);
+            handle_every_generic_trait<typename T::MapType::TailType::KeySet>(gen_file, python_file, isCpp, is_for_CPU);
+
+        }
+    }
+
+    //traverse the specializations of Meta<print>
+    template <typename CURRSET>
+    void make_extern_map_for_single_meta_trait(std::fstream &gen_file, std::fstream &python_file, std::string meta_name, bool isCpp, bool is_for_CPU){
+        std::string extern_map = meta_name + "_ext_map = {";
+        std::string all_specialization_entries = make_all_meta_map_entries<CURRSET>(gen_file, python_file, meta_name, isCpp, is_for_CPU);
+        std::cout << "\n\nSpecializerssss: " << all_specialization_entries << std::endl;
+
+
+        std::string complete_extern_map_for_single_trait =
+            meta_name + "_ext_map = {" +
+            indent(all_specialization_entries) +
+            "\n}\n";
+        
+        std::cout << complete_extern_map_for_single_trait << std::endl;
+        python_file << complete_extern_map_for_single_trait;
+    }
+
+    template <typename CURRSET>
+    static std::string make_all_meta_map_entries(std::fstream &gen_file, std::fstream &python_file, std::string meta_name, bool isCpp, bool is_for_CPU){
+        if constexpr(std::is_same<CURRSET, container::TypeSet<>>::value){
+            return "";
+        }
+        else{
+            std::string result = "";
+            typedef typename CURRSET::MapType::HeadItemType CurrTrait;
+            std::string typenameMangle = typeid(CurrTrait).name();
+            std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
+            std::string trait_name = get_type_name<CurrTrait>();
+            std::string trait_name_snake_case = toSnakeCaseMeta(trait_name);
+
+            std::cout << "\n\nTRAITSSSS " << trait_name_snake_case << std::endl;
+
+            typedef As<CurrTrait, CONTEXT> sig_component;
+            std::string single_entry = ReadMetaFunction<typename sig_component::STable::EntriesTypeMap>::exec(isCpp, trait_name, gen_file, python_file, is_for_CPU, "");
+            std::cout << "single_entry: " << single_entry << std::endl;
+            result += single_entry;
+            result += make_all_meta_map_entries<typename CURRSET::MapType::TailType::KeySet>(gen_file, python_file, meta_name, isCpp, is_for_CPU);
+            return result;
+        }
+    }
+
+    static std::string meta_single_entry_generator(std::string typemagic_mangle_name,
+                                            std::string extern_function_return_type,
+                                            std::string extern_function_param_list,
+                                            std::string reg_str_func_name,
+                                            std::string traitName){
+        std::string map_entry = "";
+        size_t start = reg_str_func_name.find('<');
+        size_t end = reg_str_func_name.find('>', start);
+
+        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
+        
+        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
+        //meta_specialization.push_back(numba_type);
+        std::string meta_handle = "my_" + traitName + "_type(" + numba_type + "):";
+        map_entry = std::format(R"PY(
+my_print_type({}): nb.types.ExternalFunction(
+    "{}",
+    nb.core.typing.signature(
+        {},
+        {}
+    )
+),)PY",
+        numba_type,
+        typemagic_mangle_name,
+        extern_function_return_type,
+        extern_function_param_list
+        );
+        return map_entry;
+    }
+
+      
+
+    template <typename... T>
+    struct ReadMetaFunction;
+
+    template <typename... TAIL>
+    struct ReadMetaFunction<container::TypeMap<TAIL...>>
+    {
+        static std::string exec(bool isCpp, 
+                           std::string traitName, 
+                           std::fstream &gen_file, 
+                           std::fstream &python_file, 
+                           bool is_for_CPU, 
+                           std::string result,
+                           int func_index = 0)
+        {
+            return "";
+        }
+    };
+
+    template <typename KEY, typename ITEM, typename... TAIL>
+    struct ReadMetaFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
+    {
+         static std::string exec(bool isCpp, 
+                           std::string traitName, 
+                           std::fstream &gen_file, 
+                           std::fstream &python_file, 
+                           bool is_for_CPU, 
+                           std::string result,
+                           int func_index = 0)
+        {
+            std::string mangle_func_name = typeid(KEY).name();
+            std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
+            size_t pos = typemagic_mangle_name.find("N");
+
+            if (pos != std::string::npos) {
+                typemagic_mangle_name.erase(pos + 1, 1);
+            }
+            std::string reg_str_func_name = get_type_name<KEY>();
+
+            std::cout << "88888888888MEta FUNC" << reg_str_func_name << std::endl;
+
+            std::string map_entry = "";
+            if (isCpp){
+                typedef typename ITEM::Args method_args_list;
+
+                typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
+                typedef typename outter_args_list::template PopFront<CONTEXT *>::type inner_args_list;
+                std::string param_list = ParamListToString<outter_args_list>::makeString(0, true);
+                std::string arg_list = ParamListToString<inner_args_list>::makeString(1, false);
+
+                std::string resultType = get_type_name<typename ITEM::Result>();
+                std::string header = param_list; // func_sig.substr(0, indexForName) + " " + trait_name + func_sig.substr(indexForName + 1);
+
+            
+                std::string extern_function_return_type = "nb." + cppToNumbaType(resultType);
+                std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
+
+
+                map_entry = meta_single_entry_generator(typemagic_mangle_name,
+                                            extern_function_return_type,
+                                            extern_function_param_list,
+                                            reg_str_func_name,
+                                            traitName);
+            }
+            return map_entry + ReadMetaFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, result, func_index + 1);
+        }
+    };
+
+    static std::string indent(
+    const std::string& text,
+    const std::string& prefix = "    ")
+    {
+        std::string result;
+        result.reserve(text.size() + 64);
+
+        bool beginning_of_line = true;
+
+        for (char c : text)
+        {
+            if (beginning_of_line && c != '\n')
+            {
+                result += prefix;
+                beginning_of_line = false;
+            }
+
+            result += c;
+
+            if (c == '\n')
+                beginning_of_line = true;
+        }
+
+        return result;
+    }
+
+    /*
+        {
+
+    /*
+    template <typename CURRSET>
+    std::string make_extern_map_entries(std::string meta_name){
+        if constexpr(std::is_same<T, container::TypeSet<>>::value){
+            return;
+        }
+        else{
+            typedef typename T::MapType::HeadItemType CurrSpecialization; 
+            std::string mangle_func_name = typeid(CurrSpecialization).name();
+            std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
+            size_t pos = typemagic_mangle_name.find("N");
+
+            if (pos != std::string::npos) {
+                typemagic_mangle_name.erase(pos + 1, 1);
+            }
+            std::string extern_python_function =
+                    "nb.types.ExternalFunction(\n"
+                    "    \"" + typemagic_mangle_name + "\",\n"
+                    "    nb.core.typing.signature(\n"
+                    "        " + extern_function_return_type + ",\n"
+                    "        " + extern_function_param_list + "\n"
+                    "    )\n"
+                    ")";
+
+
+        }
+    }
+    */
+        
+    void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
     {
         header_file << "#include <thread>"
                     << std::endl
@@ -1210,10 +1739,18 @@ def box_interval(typ, val, c):
                  << std::endl
                  << std::endl;
         addConstructor(cpp_file, python_file, true, is_for_CPU);
-        typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<Print>::template Generalizes>::type PrintSet;
-        std::cout << "\n\n\n\n****************The set of publically-advertised traits is: "
-                << container::repr::type_name<PrintSet>()
-                << std::endl;
+    
+       //filter will put every trait into isspecialization
+        typedef typename CONTEXT::TraitMap::KeySet::template Filter<IsSpecialization>::type MySet;
+        std::cout << "THIS IS A SPECIALIZE TRAIT: " << container::repr::type_name<MySet>() << std::endl;
+        //typedef typename MySet::template LossyMap<GetTemplate>::type MyMetaSet
+        std::cout << "THIS IS ALL MY META TRAITS: " << container::repr::type_name<MySet>() << std::endl;
+        typedef typename MySet::template Filter<FFIDetector<typename CONTEXT::TraitMap>::template HasFFI>::type FFISetUnMeta;
+        typedef typename FFISetUnMeta::template LossyMap<GetTemplate>::type FFIMetaSet;
+        //handle_every_generic_trait<MyMetaSet>(python_file);
+        std::cout << "\n\nTRAITS THAT IMPLEMENT FFI" << container::repr::type_name<FFIMetaSet>() << std::endl;
+        handle_every_generic_trait<FFIMetaSet>(cpp_file, python_file, true, is_for_CPU);
+
         typedef typename CONTEXT::TraitMap::KeySet::template Filter<Meta<FFIEntry>::template Generalizes>::type FFICppSet; // get every FFI specialization
         addFunctionGenRecurse<FFICppSet>(cpp_file, python_file, true, is_for_CPU);
         addDestructor(cpp_file, python_file, true, is_for_CPU);

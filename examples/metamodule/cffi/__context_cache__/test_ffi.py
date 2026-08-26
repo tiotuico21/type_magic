@@ -50,8 +50,16 @@ def my_print_type(kind):
         
     return my_print_set[kind]        
         
+extern_construct = nb.types.ExternalFunction(
+	"construct",
+	nb.core.typing.signature(nb.types.voidptr)
+)
 
-my_print_ext_map = {
+@nb.njit(cache=False)
+def construct():
+	return extern_construct()
+
+meta_print_ext_map = {
     my_print_type(nb.types.int32): nb.types.ExternalFunction(
         "_TYPEMAGICNPrintIiE7PrintFnE",
         nb.core.typing.signature(
@@ -67,6 +75,76 @@ my_print_ext_map = {
         )
     ),
 }
+extern__TYPEMAGICNAddOne6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNAddOne6CallFnE",
+	nb.core.typing.signature(
+		nb.types.float32, 
+		nb.types.voidptr, nb.types.float32, nb.types.boolean, nb.types.float32
+	)
+)
+
+@nb.njit(cache=False)
+def add_one(ptr, arg1, arg2, arg3):
+	return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
+
+extern__TYPEMAGICNAddIt6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNAddIt6CallFnE",
+	nb.core.typing.signature(
+		nb.types.int32, 
+		nb.types.voidptr
+	)
+)
+
+@nb.njit(cache=False)
+def add_it(ptr):
+	return extern__TYPEMAGICNAddIt6CallFnE(ptr)
+
+extern__TYPEMAGICNSubArgs6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNSubArgs6CallFnE",
+	nb.core.typing.signature(
+		nb.types.float32, 
+		nb.types.voidptr, nb.types.float32, nb.types.boolean, nb.types.float32
+	)
+)
+
+@nb.njit(cache=False)
+def sub_args(ptr, arg1, arg2, arg3):
+	return extern__TYPEMAGICNSubArgs6CallFnE(ptr, arg1, arg2, arg3)
+
+extern__TYPEMAGICNIsTrue6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNIsTrue6CallFnE",
+	nb.core.typing.signature(
+		nb.types.boolean, 
+		nb.types.voidptr, nb.types.boolean
+	)
+)
+
+@nb.njit(cache=False)
+def is_true(ptr, arg1):
+	return extern__TYPEMAGICNIsTrue6CallFnE(ptr, arg1)
+
+extern__TYPEMAGICNPrintIiE7PrintFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNPrintIiE7PrintFnE",
+	nb.core.typing.signature(
+		nb.types.void, 
+		nb.types.voidptr, nb.types.int32
+	)
+)
+
+
+
+extern_destruct = nb.types.ExternalFunction(
+	"destructor",
+	nb.core.typing.signature(
+		nb.types.voidptr, nb.types.voidptr
+	)
+)
+
+@nb.njit(cache=False)
+def destruct(ptr):
+	return extern_destruct(ptr)
+
+
 record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
 #@overload_method(MyPrintType, '__call__')
 #def call_overload_2_arg(self, val):
@@ -81,7 +159,7 @@ def call_overload_ffi(self, ctx, val):
         return extern_fn(ctx, val)
 
     return impl
-     
+        
 
 @lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
 def method_impl(context, builder, sig, args):
@@ -225,96 +303,6 @@ def box_interval(typ, val, c):
     return c.builder.load(ret_ptr)   
         
         
-extern_construct = nb.types.ExternalFunction(
-	"construct",
-	nb.core.typing.signature(nb.types.voidptr)
-)
-
-extern_destruct = nb.types.ExternalFunction(
-	"destructor",
-	nb.core.typing.signature(
-		nb.types.voidptr, nb.types.voidptr
-	)
-)
-
-extern__TYPEMAGICNAddOne6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNAddOne6CallFnE",
-	nb.core.typing.signature(
-		nb.types.float32, 
-		nb.types.voidptr, nb.types.float32, nb.types.boolean, nb.types.float32
-	)
-)
-
-extern__TYPEMAGICNAddIt6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNAddIt6CallFnE",
-	nb.core.typing.signature(
-		nb.types.int32, 
-		nb.types.voidptr
-	)
-)
-
-extern__TYPEMAGICNSubArgs6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNSubArgs6CallFnE",
-	nb.core.typing.signature(
-		nb.types.float32, 
-		nb.types.voidptr, nb.types.float32, nb.types.boolean, nb.types.float32
-	)
-)
-
-extern__TYPEMAGICNIsTrue6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNIsTrue6CallFnE",
-	nb.core.typing.signature(
-		nb.types.boolean, 
-		nb.types.voidptr, nb.types.boolean
-	)
-)
-
-@nb.njit(cache=False)
-def construct():
-	return extern_construct()
-
-@nb.njit(cache=False)
-def destruct(ptr):
-	return extern_destruct(ptr)
-
-@nb.njit(cache=False)
-def add_one(ptr, arg1, arg2, arg3):
-	return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
-
-@nb.njit(cache=False)
-def add_it(ptr):
-	return extern__TYPEMAGICNAddIt6CallFnE(ptr)
-
-@nb.njit(cache=False)
-def sub_args(ptr, arg1, arg2, arg3):
-	return extern__TYPEMAGICNSubArgs6CallFnE(ptr, arg1, arg2, arg3)
-
-@nb.njit(cache=False)
-def is_true(ptr, arg1):
-	return extern__TYPEMAGICNIsTrue6CallFnE(ptr, arg1)
-
-
-
-@njit
-def makeInstance(x):
-    retInstance = MyPrint(x)
-    return retInstance
-
-@nb.njit
-def test_print(my_print_instance, ctx, x):
-    my_print_instance(ctx, x)
-
-
-#p = MyPrint(nb.types.int32)
-#p = MyPrint
-
 ctx = construct()
-
-#test_print(p, ctx, 42)
-
-ret = makeInstance(nb.types.float32)
-alyssa = makeInstance(nb.types.int32)
-
-test_print(ret, ctx, 42.3)
-test_print(alyssa, ctx, 30)
-
+print(add_one(ctx, 2.0, False, 3.0))
+destruct(ctx)

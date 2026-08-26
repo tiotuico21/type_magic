@@ -1,5 +1,3 @@
-#include "ffi_gen_class.h"
-
 struct SubOne{
     struct CallFn{};
 	typedef StaticTable<

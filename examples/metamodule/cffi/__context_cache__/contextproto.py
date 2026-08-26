@@ -10,6 +10,7 @@ import inspect
 import subprocess
 
 import re
+import trait_dict
 
 from numpy import typename
 
@@ -323,6 +324,8 @@ std::vector<std::string> meta_specialization = {};
         str_logic_h_include += "#include <typeinfo>\n"
         str_logic_h_include += "#include \"../../../../include/include.h\"\n\n"
         str_logic_h_include += "#include <chrono>\n"
+        str_logic_h_include += "#include \"boot_start.h\"\n"
+                
         str_logic_h_include += "#include <thread>\n\n"
         str_logic_h_include += "#include <functional>\n\n"
         str_logic_h_include += "#define STRINGIFY(x) STRINGIFY_HELPER(x)\n"
@@ -639,11 +642,15 @@ class ApyGenerator:
 
 class ModuleCreation:
     @staticmethod
-    def make_module_for_fn_str(fn_name):
+    def make_module_for_fn_str(fn_name, required_inherited_list=None):
         str_fn_module = ""
         str_fn_module += "using " + UtilStrings.to_pascal_case(fn_name) + "Module = context::SimpleModule<\n\t"
         str_fn_module += "Meta<Impl" + UtilStrings.to_pascal_case(fn_name) + ">,\n\t"
-        str_fn_module += "context::RequirementSet<>,\n\t"
+        if (required_inherited_list == None):
+            str_fn_module += "context::RequirementSet<>,\n\t"
+        else:
+            required_inherited_list_str = ", ".join(required_inherited_list)
+            str_fn_module += "context::RequirementSet<" + required_inherited_list_str + ">,\n\t"
         str_fn_module += "context::ImplementationSet<" + UtilStrings.to_pascal_case(fn_name) + ", FFIEntry<" + UtilStrings.to_pascal_case(fn_name) + ">>\n"
         str_fn_module += ">;\n\n"
         return str_fn_module
@@ -812,11 +819,12 @@ def need_to_modify_llvm(fn, fn_name):
     print(match)
     return match
     
-def make_cpp_dict(fn_list):
+def make_cpp_dict(fn_list, required_inherited_trait_dict):
     cpp_dict = {}
     cpp_dict["RequirementSet"] = {}
     cpp_dict["RequiredTraits"] = []
     cpp_dict["LL_Files"] = []
+    cpp_dict["RequiredInherited"] = {}
     for item in fn_list:
         cpp_dict["RequirementSet"][item.__name__] = [make_func_trait_str(item, item.__name__), make_func_component_str(item, item.__name__)]
         cpp_dict["RequiredTraits"].append(UtilStrings.to_pascal_case(item.__name__))
@@ -833,6 +841,13 @@ def make_cpp_dict(fn_list):
         cpp_dict["LL_Files"].append(f"{item.__name__}.ll")
         while (need_to_modify_llvm(item, item.__name__) != None):
            modify_llvm_func_name(item)
+        print("REQUIRED INHER TRAITS")
+        print(required_inherited_trait_dict)
+        if item.__name__ in required_inherited_trait_dict:
+            print("here in the required inher traits")
+            cpp_dict["RequiredInherited"][item.__name__] = []
+            for trait in required_inherited_trait_dict[item.__name__]:
+                cpp_dict["RequiredInherited"][item.__name__].append(trait)
 
     print(cpp_dict)
     print(cpp_dict["LL_Files"])
@@ -840,7 +855,7 @@ def make_cpp_dict(fn_list):
     return cpp_dict
 
 
-def make_logic_h(fn_list, is_for_cpu):
+def make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict):
     include_str = UtilStrings.make_logic_h_include()
     get_type_name_str = FFIGenCodeGetter.make_get_type_name()
     empty_linker_array_str = UtilStrings.make_empty_linker_header_array_str()
@@ -857,7 +872,7 @@ def make_logic_h(fn_list, is_for_cpu):
     apy_param_list = UtilStrings.make_Apy_arguments_str_list(fn_list, is_for_cpu)
     cpp_to_numba_str = MiscFuncForNumba.make_cpp_to_numba_fun_str()
 
-    cpp_dict = make_cpp_dict(fn_list)
+    cpp_dict = make_cpp_dict(fn_list, required_inherited_trait_dict)
 
     with open ("logic.h", "w") as f:
         f.write(f"{include_str}\n{get_type_name_str}\n{apy_sig_list}\n{apy_param_list}\n{cpp_to_numba_str}\n{empty_linker_array_str}\n{fn_struct_str}\n{ffi_trait_str}\n{static_table_str}\n")
@@ -869,7 +884,10 @@ def make_logic_h(fn_list, is_for_cpu):
         f.write(f"{print_impl_str}\n\n{print_module_str}\n\n")
         f.write("\n")
         for name, code_body in cpp_dict["RequirementSet"].items():
-            f.write(f"{code_body[1]}\n{ModuleCreation.make_module_for_fn_str(name)}\n")
+            if (name in cpp_dict["RequiredInherited"]):
+                f.write(f"{code_body[1]}\n{ModuleCreation.make_module_for_fn_str(name, cpp_dict["RequiredInherited"][name])}\n")
+            else:
+                f.write(f"{code_body[1]}\n{ModuleCreation.make_module_for_fn_str(name)}\n")
         f.write("\n")
         f.write(f"{type_list_def_str}\n{pure_fn_eq_str}\n{gen_ffi__struct_str}")
 
@@ -881,12 +899,12 @@ def make_main_cpp(fn_list, is_for_cpu):
         f.write(f"{str_main_cpp}")
 
 
-def compile_and_run(fn_list, main_file_name, is_for_cpu):
-    make_logic_h(fn_list, is_for_cpu)
+def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trait_dict):
+    make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict)
     make_main_cpp(fn_list, is_for_cpu)
 
 
-    fn_trait_dict = make_cpp_dict(fn_list)
+    fn_trait_dict = make_cpp_dict(fn_list, required_inherited_trait_dict)
 
     ll_list = fn_trait_dict["LL_Files"]
     obj_list = [ll.replace(".ll", ".o") for ll in ll_list]
@@ -957,11 +975,10 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu):
         print(result.stderr)
         return
     
+#bc strings are iterable
+required_inherited_trait_dict = {"add_one": [trait_dict.SubOne["cpp_name"]]}
+compile_and_run([add_one, add_it, sub_args, is_true], "main.cpp", True, required_inherited_trait_dict)
 
-
-compile_and_run([add_one, add_it, sub_args, is_true], "main.cpp", True)
-
-#make_cpp_dict([add_it, add_one])
 
 
 print(AnnotationGetter.get_cplus_param_list(add_one))
