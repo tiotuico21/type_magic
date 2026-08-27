@@ -6,7 +6,7 @@ from numba import double, types
 from numba import cfunc
 from llvmlite import binding
 import inspect 
-#import magic 
+#import magic
 import subprocess
 
 import re
@@ -14,6 +14,50 @@ import trait_dict
 
 from numpy import typename
 
+import sys
+import pathlib
+import importlib.abc
+import importlib.util
+from importlib.machinery import ModuleSpec
+
+
+class MagicLoader():
+    counter = 0
+
+    def create_module(self, spec):
+        return None
+
+    def exec_module(self, module):
+        def __getattr__(name):
+            if not pathlib.Path(f"./{name}.py").is_file():
+                print("No module")
+                print(f"Name failed to find: {name}\n\n")
+                setattr(module, name, None)
+                return None
+            print("\n\nFOUND MODULE\n\n")
+            spec = importlib.util.spec_from_file_location(name, f"./{name}.py")
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[f"magic.{name}"] = mod
+            spec.loader.exec_module(mod)
+
+            #sats it returns none
+            setattr(module, name, mod)
+            return mod
+        module.__getattr__ = __getattr__
+
+class MagicFinder():
+    @classmethod
+    def find_spec(cls, fullname, path, target=None):
+        print(f"\n\nENTERED FINDER - FULL NAME: {fullname} Path: {path} \n\n")
+        if fullname == "magic":
+            #    magic_name = f"magic.{fullname}"
+            return ModuleSpec(fullname, MagicLoader())
+        return None
+
+
+sys.meta_path.insert(0, MagicFinder())
+
+import magic 
 
 
 def file_to_string(path):
@@ -125,7 +169,7 @@ using FFIGenModule = context::SimpleModule<
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, PrintModule,FFIGenModule>;
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, SubOneModule, OddModule, EvenModule, StoppingTimeModule, PrintModule,FFIGenModule>;
 ;
 
 template <typename CTX>
@@ -152,39 +196,6 @@ void run()
 		std::cout << as<context::ContextInfo>(ctx).error_string();
 	}
 }
-template <typename T>
-void put_in_dict_file(std::fstream& dict_file){
-    using namespace container;
-    using namespace context;
-
-    if constexpr (std::is_same<T, container::TypeSet<>>::value)
-    {
-        return;
-    }
-    else{
-        typedef typename T::MapType::HeadItemType CurrTrait;
-
-        if (IsMeta<CurrTrait>::value){
-            std::string FullTrait = container::repr::type_name<CurrTrait>();
-            size_t start = FullTrait.find('<');
-            size_t end = FullTrait.find('>', start); 
-
-            std::string InnerTrait = FullTrait.substr(start + 1, end - start -1);
-            
-            dict_file << "def " << InnerTrait << "(*args):";
-            dict_file << "\\n\\treturn {cpp_name: \\"" << InnerTrait
-                      << "<\\"+\\",\\".join(*args)+\\">\\"}\\n";
-            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
-        }
-        else{
-            typedef typename T::MapType::HeadItemType CurrTrait;
-            dict_file << container::repr::type_name<CurrTrait>();
-            dict_file << " = { cpp_name: \\"" << container::repr::type_name<CurrTrait>() << "\\"}\\n\\n";
-            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
-        }
-         
-    }
-}
     '''
         str_run_method = str_run_method.replace(
             "__IS_FOR_CPU__",
@@ -205,12 +216,6 @@ int main()
     typedef typename RootModule::template ImplFor<PublicTrait>::type PublicTraitImplMap;
     typedef typename PublicTraitImplMap::KeySet PublicTraitImplSet;
 
-    std::cout << "The set of publically-advertised traits is: "
-              << container::repr::type_name<PublicTraitImplSet>()
-              << std::endl;
-    std::fstream dict_file;
-    dict_file.open("trait_dict.py", std::ios::out);
-    put_in_dict_file<PublicTraitImplSet>(dict_file);
     typedef TypeMap<Binding<key::RootModule, RootModule>> BaseInputState;
 
 typedef typename BaseInputState
@@ -222,6 +227,8 @@ typedef typename BaseInputState
 
         for fn in fn_list:
             trait_list.append(UtilStrings.make_ffi_wrapper_str(fn))
+        trait_list.append("SubOne")
+        trait_list.append("FFIEntry<SubOne>")
         trait_list.append("Print<int>")
         trait_list.append("FFIEntry<Print<int>>")
         trait_list.append("Print<float>")
@@ -321,27 +328,7 @@ std::vector<std::string> meta_specialization = {};
     @staticmethod
     def make_logic_h_include():
         str_logic_h_include = ""
-        str_logic_h_include += "#include <typeinfo>\n"
-        str_logic_h_include += "#include \"../../../../include/include.h\"\n\n"
-        str_logic_h_include += "#include <chrono>\n"
-        str_logic_h_include += "#include \"boot_start.h\"\n"
-                
-        str_logic_h_include += "#include <thread>\n\n"
-        str_logic_h_include += "#include <functional>\n\n"
-        str_logic_h_include += "#define STRINGIFY(x) STRINGIFY_HELPER(x)\n"
-        str_logic_h_include += "#define STRINGIFY_HELPER(x) #x\n"
-        str_logic_h_include += "#define LINE_STRING STRINGIFY(__LINE__)\n"
-        str_logic_h_include += "#ifdef COLOR_ASSERTS\n"
-        str_logic_h_include += "#define ASSERT_TEXT(TEXT) \"\\n\\n\\e[33m\\e[1m\" __FILE__ \":\" LINE_STRING \" \\e[0m\\e[33m\" TEXT \"\\e[0m\\n\"\n"
-        str_logic_h_include += "#else\n"
-        str_logic_h_include += "#define ASSERT_TEXT(TEXT) \"\\n\\n\" __FILE__ \":\" LINE_STRING TEXT \"\\n\"\n"
-        str_logic_h_include += "#endif\n\n\n"
-        str_logic_h_include += r'''
-#include <unordered_map>
-#include <string>
-#include <stdexcept>
-#include <iostream>
-'''
+        str_logic_h_include += "#include \"root.h\"\n"
         return str_logic_h_include
     
     @staticmethod
@@ -666,10 +653,10 @@ def my_print(value: int):
 
 def add_one(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
     #imported_ctx = magic.test_ffi.construct()
-    #val = magic.add_it(imported_ctx)
+    val = magic.test_ffi.add_it(ctx)
     if (arg2):
         return arg1 
-    return arg1 + arg3
+    return val + arg3
 
 def sub_args(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
     #imported_ctx = magic.test_ffi.construct()
@@ -684,7 +671,31 @@ def is_true(ctx: CONTEXT, arg1: bool) -> bool:
 def add_it(ctx: CONTEXT) -> int:
     return 8
 
+def even(ctx: CONTEXT, arg1: int) -> int:
+    arg1 = arg1 // 2
+    if arg1 % 2 == 0:
+        #iter = magic.test_ffi.even(ctx, arg1)
+        iter = magic.test_ffi.add_one(ctx, arg1, False, arg1)
+    else:
+        #iter = magic.test_ffi.odd(ctx, arg1)
+        iter = magic.test_ffi.add_it(ctx) + 1
+    return iter + 1
+def odd(ctx: CONTEXT, arg1: int) -> int:
+    arg1 = arg1 * 3 + 1
+    #iter = magic.test_ffi.even(ctx, arg1)
+    iter = 0
+    return iter + 1
 
+def stopping_time(ctx: CONTEXT, arg1: int) -> int:
+    imported_ctx = magic.test_ffi.construct()
+    if arg1 % 2 == 0:
+        #iter = magic.test_ffi.even(imported_ctx, arg1)
+        iter = magic.test_ffi.odd(imported_ctx, arg1) + 1
+    else:
+        #iter = magic.test_ffi.odd(imported_ctx, arg1)
+        iter = 1
+    magic.test_ffi.destruct(imported_ctx)
+    return iter
 
 
 '''
@@ -754,45 +765,7 @@ def make_func_trait_str(fn, fn_name):
 
     return str_cpp_trait
 
-'''
-param_list = AnnotationGetter.get_python_param_types(add_one)
 
-signature = AnnotationGetter.make_numba_signature(add_one, param_list)
-print(signature)
-
-numba_fn = numba.njit(add_one)
-
-numba_fn.compile(signature)
-
-print(numba_fn.signatures)
-
-llvm_ir = numba_fn.inspect_llvm(numba_fn.signatures[0])
-
-# Write it to a .ll file
-with open("add.ll", "w") as f:
-    f.write(llvm_ir)
-
-'''
-
-
-
-'''
-with open("add_one.ll") as f:
-    llvm = f.read()
-
-
-#@_ZN8__main__7add_oneB2v1B38c8tJTIcFKzyF2ILShI4CrgQElQb6HczSBAA_3dE7void_2axb
-pattern = re.compile(r"_ZN8__main__[0-9]([A-Za-z_][A-Za-z0-9_]*)[^(]+")
-match = re.search(pattern, llvm)
-
-group = match.group()
-
-
-llvm = llvm[:match.start()] + "add_one" + llvm[match.end():]
-
-with open("add_one.ll", "w") as f:
-    f.write(llvm)
-'''
 
 
 def modify_llvm_func_name(fn):
@@ -829,18 +802,18 @@ def make_cpp_dict(fn_list, required_inherited_trait_dict):
         cpp_dict["RequirementSet"][item.__name__] = [make_func_trait_str(item, item.__name__), make_func_component_str(item, item.__name__)]
         cpp_dict["RequiredTraits"].append(UtilStrings.to_pascal_case(item.__name__))
         param_list = AnnotationGetter.get_python_param_types(item)
-        signature = AnnotationGetter.make_numba_signature(item, param_list)
+        #signature = AnnotationGetter.make_numba_signature(item, param_list)
         print("*****************")
         print(item.__name__)
-        numba_fn = numba.cfunc(signature)(item)
+        #numba_fn = numba.cfunc(signature)(item)
         #numba_fn.compile(signature)
-        llvm_ir = numba_fn.inspect_llvm()
-        with open(f"{item.__name__}.ll", "w") as f:
-            f.write(llvm_ir)
+        #llvm_ir = numba_fn.inspect_llvm()
+        #with open(f"{item.__name__}.ll", "w") as f:
+        #    f.write(llvm_ir)
 
-        cpp_dict["LL_Files"].append(f"{item.__name__}.ll")
-        while (need_to_modify_llvm(item, item.__name__) != None):
-           modify_llvm_func_name(item)
+        #cpp_dict["LL_Files"].append(f"{item.__name__}.ll")
+        #while (need_to_modify_llvm(item, item.__name__) != None):
+        #  modify_llvm_func_name(item)
         print("REQUIRED INHER TRAITS")
         print(required_inherited_trait_dict)
         if item.__name__ in required_inherited_trait_dict:
@@ -850,7 +823,7 @@ def make_cpp_dict(fn_list, required_inherited_trait_dict):
                 cpp_dict["RequiredInherited"][item.__name__].append(trait)
 
     print(cpp_dict)
-    print(cpp_dict["LL_Files"])
+    #print(cpp_dict["LL_Files"])
 
     return cpp_dict
 
@@ -875,13 +848,10 @@ def make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict):
     cpp_dict = make_cpp_dict(fn_list, required_inherited_trait_dict)
 
     with open ("logic.h", "w") as f:
-        f.write(f"{include_str}\n{get_type_name_str}\n{apy_sig_list}\n{apy_param_list}\n{cpp_to_numba_str}\n{empty_linker_array_str}\n{fn_struct_str}\n{ffi_trait_str}\n{static_table_str}\n")
-        #f.write("std::string ")
-        f.write(f"{print_trait_str}\n\n")
+        f.write(f"{include_str}\n")
         for name, code_body in cpp_dict["RequirementSet"].items():
             f.write(code_body[0])
             f.write("\n")
-        f.write(f"{print_impl_str}\n\n{print_module_str}\n\n")
         f.write("\n")
         for name, code_body in cpp_dict["RequirementSet"].items():
             if (name in cpp_dict["RequiredInherited"]):
@@ -889,7 +859,7 @@ def make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict):
             else:
                 f.write(f"{code_body[1]}\n{ModuleCreation.make_module_for_fn_str(name)}\n")
         f.write("\n")
-        f.write(f"{type_list_def_str}\n{pure_fn_eq_str}\n{gen_ffi__struct_str}")
+        #.write(f"{type_list_def_str}\n{pure_fn_eq_str}\n{gen_ffi__struct_str}")
 
     
 def make_main_cpp(fn_list, is_for_cpu):
@@ -905,9 +875,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trai
 
 
     fn_trait_dict = make_cpp_dict(fn_list, required_inherited_trait_dict)
-
-    ll_list = fn_trait_dict["LL_Files"]
-    obj_list = [ll.replace(".ll", ".o") for ll in ll_list]
+  
     result = subprocess.run(
         [
             "g++",
@@ -936,22 +904,27 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trai
         text=True
     )
 
-    '''
-    result = subprocess.run(
-        [
-            "clang-22",
-            "-g",
-            "-static-libstdc++",
-            "-std=c++20",
-            "-shared",
-            "-fPIC",
-            "cffi.cpp",
-            *ll_list,
-            "-o",
-            "my_dynamic_library.so"
-        ]
-    )
-    '''
+    for item in  fn_list:
+        param_list = AnnotationGetter.get_python_param_types(item)
+        signature = AnnotationGetter.make_numba_signature(item, param_list)
+        print("inspecting and creating all llvm ir")
+        print(f"param_list: {param_list}\nsignature: {signature}")
+        print("*****************")
+        print(item.__name__)
+        print(f"creating numba fn for {item.__name__}")
+        numba_fn = numba.cfunc(signature)(item)
+        #numba_fn.compile(signature)
+        print("calling inspect_llvm")
+        llvm_ir = numba_fn.inspect_llvm()
+        with open(f"{item.__name__}.ll", "w") as f:
+            print(f"writing to the {item.__name__} ll file")
+            f.write(llvm_ir)
+
+        fn_trait_dict["LL_Files"].append(f"{item.__name__}.ll")
+        while (need_to_modify_llvm(item, item.__name__) != None):
+            modify_llvm_func_name(item)
+    ll_list = fn_trait_dict["LL_Files"]
+    obj_list = [ll.replace(".ll", ".o") for ll in ll_list]
     result = subprocess.run(
     [
         "clang-22",
@@ -977,7 +950,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trai
     
 #bc strings are iterable
 required_inherited_trait_dict = {"add_one": [trait_dict.SubOne["cpp_name"]]}
-compile_and_run([add_one, add_it, sub_args, is_true], "main.cpp", True, required_inherited_trait_dict)
+compile_and_run([add_one, add_it, sub_args, is_true, even, odd, stopping_time], "main.cpp", True, required_inherited_trait_dict)
 
 
 

@@ -1,6 +1,8 @@
-FFIEntry_SubOne = { "cpp_name": "FFIEntry<SubOne>"}
-
+def FFIEntry(*args):
+	return {cpp_name: "FFIEntry<"+",".join(*args)+">"}
+def Print(*args):
+	return {cpp_name: "Print<"+",".join(*args)+">"}
 SubOne = { "cpp_name": "SubOne"}
 
-FFIGen = { "cpp_name": "FFIGen"}
+FFIEntry_SubOne = { "cpp_name": "FFIEntry<SubOne>"}
 

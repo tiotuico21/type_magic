@@ -1,9 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
-#include "boot_start.h"
+#include "root.h"
 
-using RootModule = context::ModuleBundle<SubOneModule, FFIGenModule>;
+using RootModule = context::ModuleBundle<PrintModule, SubOneModule>;
 
 
 template <typename CTX>

@@ -123,15 +123,53 @@ extern__TYPEMAGICNIsTrue6CallFnE = nb.types.ExternalFunction(
 def is_true(ptr, arg1):
 	return extern__TYPEMAGICNIsTrue6CallFnE(ptr, arg1)
 
-extern__TYPEMAGICNPrintIiE7PrintFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNPrintIiE7PrintFnE",
+extern__TYPEMAGICNEven6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNEven6CallFnE",
 	nb.core.typing.signature(
-		nb.types.void, 
+		nb.types.int32, 
 		nb.types.voidptr, nb.types.int32
 	)
 )
 
+@nb.njit(cache=False)
+def even(ptr, arg1):
+	return extern__TYPEMAGICNEven6CallFnE(ptr, arg1)
 
+extern__TYPEMAGICNOdd6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNOdd6CallFnE",
+	nb.core.typing.signature(
+		nb.types.int32, 
+		nb.types.voidptr, nb.types.int32
+	)
+)
+
+@nb.njit(cache=False)
+def odd(ptr, arg1):
+	return extern__TYPEMAGICNOdd6CallFnE(ptr, arg1)
+
+extern__TYPEMAGICN2StoppingTime6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICN2StoppingTime6CallFnE",
+	nb.core.typing.signature(
+		nb.types.int32, 
+		nb.types.voidptr, nb.types.int32
+	)
+)
+
+@nb.njit(cache=False)
+def stopping_time(ptr, arg1):
+	return extern__TYPEMAGICN2StoppingTime6CallFnE(ptr, arg1)
+
+extern__TYPEMAGICNSubOne6CallFnE = nb.types.ExternalFunction(
+	"_TYPEMAGICNSubOne6CallFnE",
+	nb.core.typing.signature(
+		nb.types.float32, 
+		nb.types.voidptr, nb.types.float32
+	)
+)
+
+@nb.njit(cache=False)
+def sub_one(ptr, arg1):
+	return extern__TYPEMAGICNSubOne6CallFnE(ptr, arg1)
 
 extern_destruct = nb.types.ExternalFunction(
 	"destructor",
@@ -303,6 +341,4 @@ def box_interval(typ, val, c):
     return c.builder.load(ret_ptr)   
         
         
-ctx = construct()
-print(add_one(ctx, 2.0, False, 3.0))
-destruct(ctx)
+        
