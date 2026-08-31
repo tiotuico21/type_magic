@@ -573,7 +573,15 @@ def box_interval(typ, val, c):
         c.builder.store(res, ret_ptr)
 
     return c.builder.load(ret_ptr)   
-        
+
+@nb.njit
+def makeInstance(x):
+    retInstance = MyPrint(x)
+    return retInstance
+@nb.njit
+def test_print(my_print_instance, ctx, x):
+    my_print_instance(ctx, x)
+
         
         )PY";
 
@@ -1559,6 +1567,14 @@ my_print_type({}): nb.types.ExternalFunction(
                                             extern_function_param_list,
                                             reg_str_func_name,
                                             traitName);
+                
+                write_function_to_cpp_file_cpu(gen_file,
+                                            resultType,
+                                            typemagic_mangle_name,
+                                            header,
+                                            traitName, 
+                                            reg_str_func_name,
+                                            arg_list);
             }
             return map_entry + ReadMetaFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, result, func_index + 1);
         }

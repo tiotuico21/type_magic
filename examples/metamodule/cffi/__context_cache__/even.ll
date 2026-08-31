@@ -4,41 +4,44 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-unknown-linux-gnu"
 
 @_ZN08NumbaEnv8__main__4evenB2v6B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
+@".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
+@".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce7e10>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x78f2b0ce7e10>\00"
+@_ZN08NumbaEnv8test_ffi12makeInstanceB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE16class_28int32_29 = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi10test_printB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE22MyPrintType_28int32_297void_2ax = common local_unnamed_addr global ptr null
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
-@".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x7d32b0589810>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x7d32b0589810>\00"
-@_ZN08NumbaEnv8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi17call_overload_ffi12_3clocals_3e4implB2v9B42c8tJTIeFIjxB2IKSgI4CrvQClcaMQ5hEEUSJJgA_3dE22MyPrintType_28int32_297void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
 
 define noundef range(i32 -1, -2) i32 @_ZN8__main__4evenB2v6B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
-B0.else.if:
+B0.endif.endif.endif.else.if:
   %.19.1 = ashr i64 %arg.arg1, 1
+  %.6.i.i = trunc i64 %.19.1 to i32
+  %.7.i.i = tail call ptr @_TYPEMAGICNPrintIiE7PrintFnE(ptr %arg.ctx, i32 %.6.i.i), !noalias !0
   %0 = and i64 %arg.arg1, 2
-  %.98 = icmp eq i64 %0, 0
-  br i1 %.98, label %B48.endif, label %B130
+  %.148 = icmp eq i64 %0, 0
+  br i1 %.148, label %B222.endif, label %B304
 
-B130:                                             ; preds = %B0.else.if
-  %.138.not = icmp eq i64 %.19.1, 1
-  br i1 %.138.not, label %common.ret, label %B142
+B304:                                             ; preds = %B0.endif.endif.endif.else.if
+  %.188.not = icmp eq i64 %.19.1, 1
+  br i1 %.188.not, label %common.ret, label %B316
 
-B142:                                             ; preds = %B130
-  %.6.i1 = trunc i64 %.19.1 to i32
-  %.7.i2 = tail call i32 @_TYPEMAGICNOdd6CallFnE(ptr %arg.ctx, i32 %.6.i1), !noalias !0
+B316:                                             ; preds = %B304
+  %.7.i2 = tail call i32 @_TYPEMAGICNOdd6CallFnE(ptr %arg.ctx, i32 %.6.i.i), !noalias !5
   %1 = sext i32 %.7.i2 to i64
   %2 = add nsw i64 %1, 1
   br label %common.ret
 
-common.ret:                                       ; preds = %B130, %B142, %B48.endif
-  %storemerge = phi i64 [ %.131, %B48.endif ], [ 1, %B130 ], [ %2, %B142 ]
+common.ret:                                       ; preds = %B304, %B316, %B222.endif
+  %storemerge = phi i64 [ %.181, %B222.endif ], [ 1, %B304 ], [ %2, %B316 ]
   store i64 %storemerge, ptr %retptr, align 8
   ret i32 0
 
-B48.endif:                                        ; preds = %B0.else.if
-  %.6.i = trunc i64 %.19.1 to i32
-  %.7.i = tail call i32 @_TYPEMAGICNEven6CallFnE(ptr %arg.ctx, i32 %.6.i), !noalias !3
-  %.130 = sext i32 %.7.i to i64
-  %.131 = add nsw i64 %.130, 1
+B222.endif:                                       ; preds = %B0.endif.endif.endif.else.if
+  %.7.i = tail call i32 @_TYPEMAGICNEven6CallFnE(ptr %arg.ctx, i32 %.6.i.i), !noalias !8
+  %.180 = sext i32 %.7.i to i64
+  %.181 = add nsw i64 %.180, 1
   br label %common.ret
 }
 
@@ -61,7 +64,7 @@ common.ret:                                       ; preds = %entry, %.23
   ret i64 %.18
 
 .23:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x7d32b0589810>")
+  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce7e10>")
   call void @PyErr_WriteUnraisable(ptr %.71)
   call void @Py_DecRef(ptr %.71)
   call void @numba_gil_release(ptr nonnull %.20)
@@ -102,15 +105,22 @@ declare void @PyErr_SetString(ptr, ptr) local_unnamed_addr
 
 declare void @PyErr_SetNone(ptr) local_unnamed_addr
 
+declare ptr @_TYPEMAGICNPrintIiE7PrintFnE(ptr, i32) local_unnamed_addr
+
 declare i32 @_TYPEMAGICNEven6CallFnE(ptr, i32) local_unnamed_addr
 
 declare i32 @_TYPEMAGICNOdd6CallFnE(ptr, i32) local_unnamed_addr
 
 attributes #0 = { noinline }
 
-!0 = !{!1}
-!1 = distinct !{!1, !2, !"_ZN8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!2 = distinct !{!2, !"_ZN8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
-!3 = !{!4}
-!4 = distinct !{!4, !5, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!5 = distinct !{!5, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!0 = !{!1, !3}
+!1 = distinct !{!1, !2, !"_ZN8test_ffi17call_overload_ffi12_3clocals_3e4implB2v9B42c8tJTIeFIjxB2IKSgI4CrvQClcaMQ5hEEUSJJgA_3dE22MyPrintType_28int32_297void_2ax: %retptr"}
+!2 = distinct !{!2, !"_ZN8test_ffi17call_overload_ffi12_3clocals_3e4implB2v9B42c8tJTIeFIjxB2IKSgI4CrvQClcaMQ5hEEUSJJgA_3dE22MyPrintType_28int32_297void_2ax"}
+!3 = distinct !{!3, !4, !"_ZN8test_ffi10test_printB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE22MyPrintType_28int32_297void_2ax: %retptr"}
+!4 = distinct !{!4, !"_ZN8test_ffi10test_printB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE22MyPrintType_28int32_297void_2ax"}
+!5 = !{!6}
+!6 = distinct !{!6, !7, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!7 = distinct !{!7, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!8 = !{!9}
+!9 = distinct !{!9, !10, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!10 = distinct !{!10, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}

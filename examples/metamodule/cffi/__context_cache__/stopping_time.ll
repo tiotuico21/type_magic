@@ -3,17 +3,17 @@ source_filename = "<string>"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
-@_ZN08NumbaEnv8__main__13stopping_timeB3v10B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8__main__13stopping_timeB3v13B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x7d32b06d8d60>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x7d32b06d8d60>\00"
-@_ZN08NumbaEnv8test_ffi9constructB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi8destructB3v12B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
+@".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce7ce0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x78f2b0ce7ce0>\00"
+@_ZN08NumbaEnv8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
 
-define noundef range(i32 -1, -2) i32 @_ZN8__main__13stopping_timeB3v10B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr nocapture readnone %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
+define noundef range(i32 -1, -2) i32 @_ZN8__main__13stopping_timeB3v13B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr nocapture readnone %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
 B0.endif.else.if:
   %.4.i = tail call ptr @construct(), !noalias !0
   %0 = and i64 %arg.arg1, 1
@@ -40,7 +40,7 @@ common.ret:                                       ; preds = %B160, %B94
 define i64 @stopping_time(ptr nocapture readnone %.1, i64 %.2) local_unnamed_addr {
 entry:
   %.4 = alloca i64, align 8
-  %.8 = call i32 @_ZN8__main__13stopping_timeB3v10B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr nonnull %.4, ptr nonnull poison, ptr poison, i64 %.2) #0
+  %.8 = call i32 @_ZN8__main__13stopping_timeB3v13B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr nonnull %.4, ptr nonnull poison, ptr poison, i64 %.2) #0
   %.18 = load i64, ptr %.4, align 8
   %.20 = alloca i32, align 4
   store i32 0, ptr %.20, align 4
@@ -56,7 +56,7 @@ common.ret:                                       ; preds = %entry, %.23
   ret i64 %.18
 
 .23:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x7d32b06d8d60>")
+  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce7ce0>")
   call void @PyErr_WriteUnraisable(ptr %.71)
   call void @Py_DecRef(ptr %.71)
   call void @numba_gil_release(ptr nonnull %.20)
@@ -108,14 +108,14 @@ declare ptr @destructor(ptr) local_unnamed_addr
 attributes #0 = { noinline }
 
 !0 = !{!1}
-!1 = distinct !{!1, !2, !"_ZN8test_ffi9constructB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE: %retptr"}
-!2 = distinct !{!2, !"_ZN8test_ffi9constructB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE"}
+!1 = distinct !{!1, !2, !"_ZN8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE: %retptr"}
+!2 = distinct !{!2, !"_ZN8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE"}
 !3 = !{!4}
-!4 = distinct !{!4, !5, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!5 = distinct !{!5, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!4 = distinct !{!4, !5, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!5 = distinct !{!5, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
 !6 = !{!7}
-!7 = distinct !{!7, !8, !"_ZN8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!8 = distinct !{!8, !"_ZN8test_ffi3oddB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!7 = distinct !{!7, !8, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!8 = distinct !{!8, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
 !9 = !{!10}
-!10 = distinct !{!10, !11, !"_ZN8test_ffi8destructB3v12B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
-!11 = distinct !{!11, !"_ZN8test_ffi8destructB3v12B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}
+!10 = distinct !{!10, !11, !"_ZN8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
+!11 = distinct !{!11, !"_ZN8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}

@@ -3,14 +3,14 @@ source_filename = "<string>"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
-@_ZN08NumbaEnv8__main__3oddB2v9B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv8__main__3oddB3v12B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x7d32b06d82b0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x7d32b06d82b0>\00"
-@_ZN08NumbaEnv8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce4e90>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x78f2b0ce4e90>\00"
+@_ZN08NumbaEnv8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
 
-define noundef range(i32 -1, -2) i32 @_ZN8__main__3oddB2v9B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
+define noundef range(i32 -1, -2) i32 @_ZN8__main__3oddB3v12B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
 common.ret:
   %0 = trunc i64 %arg.arg1 to i32
   %1 = mul i32 %0, 3
@@ -25,7 +25,7 @@ common.ret:
 define i64 @odd(ptr %.1, i64 %.2) local_unnamed_addr {
 entry:
   %.4 = alloca i64, align 8
-  %.8 = call i32 @_ZN8__main__3oddB2v9B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr nonnull %.4, ptr nonnull poison, ptr %.1, i64 %.2) #0
+  %.8 = call i32 @_ZN8__main__3oddB3v12B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr nonnull %.4, ptr nonnull poison, ptr %.1, i64 %.2) #0
   %.18 = load i64, ptr %.4, align 8
   %.20 = alloca i32, align 4
   store i32 0, ptr %.20, align 4
@@ -41,7 +41,7 @@ common.ret:                                       ; preds = %entry, %.23
   ret i64 %.18
 
 .23:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x7d32b06d82b0>")
+  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce4e90>")
   call void @PyErr_WriteUnraisable(ptr %.71)
   call void @Py_DecRef(ptr %.71)
   call void @numba_gil_release(ptr nonnull %.20)
@@ -87,5 +87,5 @@ declare i32 @_TYPEMAGICNEven6CallFnE(ptr, i32) local_unnamed_addr
 attributes #0 = { noinline }
 
 !0 = !{!1}
-!1 = distinct !{!1, !2, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!2 = distinct !{!2, !"_ZN8test_ffi4evenB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!1 = distinct !{!1, !2, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!2 = distinct !{!2, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}

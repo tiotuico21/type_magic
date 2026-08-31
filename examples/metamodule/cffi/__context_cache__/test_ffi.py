@@ -339,8 +339,14 @@ def box_interval(typ, val, c):
         c.builder.store(res, ret_ptr)
 
     return c.builder.load(ret_ptr)   
+
+@nb.njit
+def makeInstance(x):
+    retInstance = MyPrint(x)
+    return retInstance
+@nb.njit
+def test_print(my_print_instance, ctx, x):
+    my_print_instance(ctx, x)
+
         
         
-        
-ctx = construct()
-print(stopping_time(ctx, 27))

@@ -673,7 +673,8 @@ def add_it(ctx: CONTEXT) -> int:
 
 def even(ctx: CONTEXT, arg1: int) -> int:
     arg1 = arg1 // 2
-   
+    printInstance = magic.test_ffi.makeInstance(numba.types.int32)
+    magic.test_ffi.test_print(printInstance, ctx, arg1)
     if (arg1 % 2 == 0):
         iter = magic.test_ffi.even(ctx, arg1) 
     elif arg1 != 1:
