@@ -417,12 +417,12 @@ def my_print_type(kind):
 record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
 #@overload_method(MyPrintType, '__call__')
 #def call_overload_2_arg(self, val):
-#    extern_fn = my_print_ext_map[self]
+#    extern_fn = meta_print_ext_map[self]
 
 @overload_method(MyPrintType, '__call__')
 def call_overload_ffi(self, ctx, val):
 
-    extern_fn = my_print_ext_map[self]
+    extern_fn = meta_print_ext_map[self]
 
     def impl(self, ctx, val):
         return extern_fn(ctx, val)
@@ -1589,38 +1589,6 @@ my_print_type({}): nb.types.ExternalFunction(
 
         return result;
     }
-
-    /*
-        {
-
-    /*
-    template <typename CURRSET>
-    std::string make_extern_map_entries(std::string meta_name){
-        if constexpr(std::is_same<T, container::TypeSet<>>::value){
-            return;
-        }
-        else{
-            typedef typename T::MapType::HeadItemType CurrSpecialization; 
-            std::string mangle_func_name = typeid(CurrSpecialization).name();
-            std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
-            size_t pos = typemagic_mangle_name.find("N");
-
-            if (pos != std::string::npos) {
-                typemagic_mangle_name.erase(pos + 1, 1);
-            }
-            std::string extern_python_function =
-                    "nb.types.ExternalFunction(\n"
-                    "    \"" + typemagic_mangle_name + "\",\n"
-                    "    nb.core.typing.signature(\n"
-                    "        " + extern_function_return_type + ",\n"
-                    "        " + extern_function_param_list + "\n"
-                    "    )\n"
-                    ")";
-
-
-        }
-    }
-    */
         
     void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
     {

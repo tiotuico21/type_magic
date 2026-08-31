@@ -673,30 +673,28 @@ def add_it(ctx: CONTEXT) -> int:
 
 def even(ctx: CONTEXT, arg1: int) -> int:
     arg1 = arg1 // 2
-    if arg1 % 2 == 0:
-        #iter = magic.test_ffi.even(ctx, arg1)
-        iter = magic.test_ffi.add_one(ctx, arg1, False, arg1)
-    else:
-        #iter = magic.test_ffi.odd(ctx, arg1)
-        iter = magic.test_ffi.add_it(ctx) + 1
+   
+    if (arg1 % 2 == 0):
+        iter = magic.test_ffi.even(ctx, arg1) 
+    elif arg1 != 1:
+        iter = magic.test_ffi.odd(ctx, arg1) 
     return iter + 1
+    
 def odd(ctx: CONTEXT, arg1: int) -> int:
-    arg1 = arg1 * 3 + 1
-    #iter = magic.test_ffi.even(ctx, arg1)
-    iter = 0
+    #imported_ctx = magic.test_ffi.construct()
+    arg1  = arg1 * 3 + 1
+    iter = magic.test_ffi.even(ctx, arg1)
     return iter + 1
 
 def stopping_time(ctx: CONTEXT, arg1: int) -> int:
     imported_ctx = magic.test_ffi.construct()
+    iter = 0
     if arg1 % 2 == 0:
-        #iter = magic.test_ffi.even(imported_ctx, arg1)
-        iter = magic.test_ffi.odd(imported_ctx, arg1) + 1
+        iter = magic.test_ffi.even(imported_ctx, arg1) 
     else:
-        #iter = magic.test_ffi.odd(imported_ctx, arg1)
-        iter = 1
+        iter = magic.test_ffi.odd(imported_ctx, arg1) 
     magic.test_ffi.destruct(imported_ctx)
     return iter
-
 
 '''
 std::vector<std::string> extern_func_headers = {

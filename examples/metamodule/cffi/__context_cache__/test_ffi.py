@@ -186,12 +186,12 @@ def destruct(ptr):
 record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
 #@overload_method(MyPrintType, '__call__')
 #def call_overload_2_arg(self, val):
-#    extern_fn = my_print_ext_map[self]
+#    extern_fn = meta_print_ext_map[self]
 
 @overload_method(MyPrintType, '__call__')
 def call_overload_ffi(self, ctx, val):
 
-    extern_fn = my_print_ext_map[self]
+    extern_fn = meta_print_ext_map[self]
 
     def impl(self, ctx, val):
         return extern_fn(ctx, val)
@@ -342,3 +342,5 @@ def box_interval(typ, val, c):
         
         
         
+ctx = construct()
+print(stopping_time(ctx, 27))
