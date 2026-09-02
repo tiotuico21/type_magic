@@ -7,7 +7,7 @@ target triple = "x86_64-unknown-linux-gnu"
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce4d60>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x78f2b0ce4d60>\00"
+@".const.<numba.core.cpu.CPUContext object at 0x74357c864fc0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x74357c864fc0>\00"
 @_ZN08NumbaEnv8test_ffi6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
 
 define noundef range(i32 -1, -2) i32 @_ZN8__main__7add_oneB2v1B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2afbf(ptr noalias nocapture writeonly initializes((0, 4)) %retptr, ptr noalias nocapture readnone %excinfo, ptr %arg.ctx, float %arg.arg1, i8 %arg.arg2, float %arg.arg3) local_unnamed_addr {
@@ -43,7 +43,7 @@ common.ret:                                       ; preds = %entry, %.26
   ret float %.21
 
 .26:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.74 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x78f2b0ce4d60>")
+  %.74 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x74357c864fc0>")
   call void @PyErr_WriteUnraisable(ptr %.74)
   call void @Py_DecRef(ptr %.74)
   call void @numba_gil_release(ptr nonnull %.23)

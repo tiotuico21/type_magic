@@ -162,16 +162,24 @@ using FFIGenModule = context::SimpleModule<
 
     
     @staticmethod
-    def make_main_cpp_file(fn_list, is_for_cpu):
+    def make_main_cpp_file(fn_list, inherited_trait_list, is_for_cpu):
         str_run_method = '''
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
-#include "logic.h"
+#include "logic.h"\n\n
+'''
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, SubOneModule, OddModule, EvenModule, StoppingTimeModule, PrintModule,FFIGenModule>;
-;
+        str_run_method += "using RootModule = context::ModuleBundle<" 
+        trait_list = []
+        for fn in fn_list:
+            trait_list.append(UtilStrings.to_pascal_case(fn.__name__) + "Module")
+        trait_list.append("LibRootModule")
 
+        str_run_method += ", ".join(trait_list) + ">;\n"
+        #AddOneModule, AddItModule, SubArgsModule, IsTrueModule, OddModule, EvenModule, StoppingTimeModule, LibRootModule>;
+
+        str_run_method += '''
 template <typename CTX>
 void run()
 {
@@ -201,12 +209,12 @@ void run()
             "__IS_FOR_CPU__",
             "true" if is_for_cpu else "false"
         )
-        str_main_method = FFIGenCodeGetter.make_main_func_in_main_cpp(fn_list)
+        str_main_method = FFIGenCodeGetter.make_main_func_in_main_cpp(fn_list, inherited_trait_list)
         str_main_cpp = str_run_method + str_main_method
         return str_main_cpp
 
     @staticmethod
-    def make_main_func_in_main_cpp(fn_list):
+    def make_main_func_in_main_cpp(fn_list, inherited_trait_list):
         str_main_method = '''
 int main()
 {
@@ -227,12 +235,16 @@ typedef typename BaseInputState
 
         for fn in fn_list:
             trait_list.append(UtilStrings.make_ffi_wrapper_str(fn))
-        trait_list.append("SubOne")
-        trait_list.append("FFIEntry<SubOne>")
-        trait_list.append("Print<int>")
-        trait_list.append("FFIEntry<Print<int>>")
-        trait_list.append("Print<float>")
-        trait_list.append("FFIEntry<Print<float>>")
+
+        print("\n\nINHERITED TRAITS")
+        print(inherited_trait_list)
+        parsedInheritedTraitList = [
+                    x["cpp_name"] if isinstance(x, dict) and "cpp_name" in x else x
+                    for x in inherited_trait_list
+                ]
+        for trait in parsedInheritedTraitList:
+            trait_list.append(trait)
+
         trait_list.append("FFIGen")
 
         
@@ -673,8 +685,8 @@ def add_it(ctx: CONTEXT) -> int:
 
 def even(ctx: CONTEXT, arg1: int) -> int:
     arg1 = arg1 // 2
-    printInstance = magic.test_ffi.makeInstance(numba.types.int32)
-    magic.test_ffi.test_print(printInstance, ctx, arg1)
+    printInstance = magic.test_ffi.meta_print.makeInstance(numba.types.int32)
+    magic.test_ffi.meta_print.test__meta_print(printInstance, ctx, arg1)
     if (arg1 % 2 == 0):
         iter = magic.test_ffi.even(ctx, arg1) 
     elif arg1 != 1:
@@ -861,16 +873,16 @@ def make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict):
         #.write(f"{type_list_def_str}\n{pure_fn_eq_str}\n{gen_ffi__struct_str}")
 
     
-def make_main_cpp(fn_list, is_for_cpu):
-    str_main_cpp = FFIGenCodeGetter.make_main_cpp_file(fn_list, is_for_cpu)
+def make_main_cpp(fn_list, inherited_trait_list, is_for_cpu):
+    str_main_cpp = FFIGenCodeGetter.make_main_cpp_file(fn_list, inherited_trait_list, is_for_cpu)
 
     with open ("main.cpp", "w") as f:
         f.write(f"{str_main_cpp}")
 
 
-def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trait_dict):
+def compile_and_run(fn_list, inherited_trait_list, main_file_name, is_for_cpu, required_inherited_trait_dict):
     make_logic_h(fn_list, is_for_cpu, required_inherited_trait_dict)
-    make_main_cpp(fn_list, is_for_cpu)
+    make_main_cpp(fn_list, inherited_trait_list, is_for_cpu)
 
 
     fn_trait_dict = make_cpp_dict(fn_list, required_inherited_trait_dict)
@@ -949,7 +961,7 @@ def compile_and_run(fn_list, main_file_name, is_for_cpu, required_inherited_trai
     
 #bc strings are iterable
 required_inherited_trait_dict = {"add_one": [trait_dict.SubOne["cpp_name"]]}
-compile_and_run([add_one, add_it, sub_args, is_true, even, odd, stopping_time], "main.cpp", True, required_inherited_trait_dict)
+compile_and_run([add_one, add_it, sub_args, is_true, even, odd, stopping_time], [trait_dict.SubOne["cpp_name"], trait_dict.FFIEntry_SubOne["cpp_name"], trait_dict.Print("int"), trait_dict.Print("float"), trait_dict.FFIEntry(trait_dict.Print("int")["cpp_name"]), trait_dict.FFIEntry(trait_dict.Print("float")["cpp_name"]), trait_dict.Log("int"), trait_dict.Log("float"), trait_dict.FFIEntry(trait_dict.Log("int")["cpp_name"]), trait_dict.FFIEntry(trait_dict.Log("float")["cpp_name"])], "main.cpp", True, required_inherited_trait_dict)
 
 
 

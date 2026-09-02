@@ -5,7 +5,6 @@
 #include <thread>
 
 #include <functional>
-
 #define STRINGIFY(x) STRINGIFY_HELPER(x)
 #define STRINGIFY_HELPER(x) #x
 #define LINE_STRING STRINGIFY(__LINE__)

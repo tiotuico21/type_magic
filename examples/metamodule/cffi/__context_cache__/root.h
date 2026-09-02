@@ -20,8 +20,25 @@
 #include <unordered_map>
 #include <string>
 #include <stdexcept>
+#include "template.h"
 #include <iostream>
 
+static std::string replaceAll(
+    std::string str,
+    const std::string& from,
+    const std::string& to
+)
+{
+    size_t pos = 0;
+
+    while ((pos = str.find(from, pos)) != std::string::npos)
+    {
+        str.replace(pos, from.length(), to);
+        pos += to.length();
+    }
+
+    return str;
+}
 template <typename TYPE>
 static std::string query(){
     return __PRETTY_FUNCTION__;
@@ -228,8 +245,76 @@ using SubOneModule = context::SimpleModule<
 	context::ImplementationSet<SubOne, FFIEntry<SubOne>>
 >;
 
+template <typename T>
+struct Log{
+    struct LogFn{};
+
+    typedef StaticTable<
+        container::Binding<LogFn, void(T)>>
+        STable;
+};
 
 
+
+
+template <typename T>
+struct LogImplMeta{
+    template <typename CONTEXT>
+    struct LogImpl
+    {
+        std::fstream returnFile;
+        LogImpl() : returnFile("myfile.txt", std::ios::out | std::ios::app)
+        {
+            std::cout << "is_open: " << returnFile.is_open() << '\n';
+            std::cout << "fail:    " << returnFile.fail() << '\n';
+            std::cout << "good:    " << returnFile.good() << '\n';
+        }
+        void toLog(T message)
+        {
+            std::cout << "******** LOG FUNCTION ********\n";
+            returnFile << "Log " << message << '\n';
+        
+        }
+        typedef StaticTable<
+            container::Binding<
+                typename Log<T>::LogFn,
+                Fn<&LogImplMeta::template LogImpl<CONTEXT>::toLog>
+            >
+        >
+        STable;
+    };
+    typedef context::SimpleModule <
+        Meta<LogImpl>,
+        context::RequirementSet<>,
+        context::ImplementationSet<Log<T>, FFIEntry<Log<T>>>
+    > Module;
+};
+
+template <typename T>
+struct LogImplFFIMeta {
+    typedef context::EmptyModule Module;
+};
+
+template <typename T>
+struct LogImplFFIMeta <Log<T>> { 
+    typedef context::SimpleModule <
+            Meta<LogImplMeta<T>::template LogImpl>,
+            context::RequirementSet<>,
+            context::ImplementationSet<Log<T>, FFIEntry<Log<T>>>
+        > Module;
+};
+
+
+typedef context::ModuleBundle<
+    context::MetaModule <
+        Log,
+        LogImplMeta
+    >,
+    context::MetaModule <
+        FFIEntry,
+        LogImplFFIMeta
+    >
+> LogModule;
 
 
 template <typename T>
@@ -321,60 +406,19 @@ struct FFIGenImpl{
         header_file.open("cffi.h", std::ios::trunc | std::ios::out);
         cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
         python_file.open("test_ffi.py", std::ios::trunc | std::ios::out);
-        std::string meta_code_for_numba = R"(
-from numba import types
-from numba.extending import typeof_impl
-from numba.extending import as_numba_type
-from numba.extending import type_callable
-from numba.extending import models, register_model
-from numba.extending import make_attribute_wrapper
-from numba.extending import overload_attribute
-from numba.extending import lower_builtin
-from numba.core import cgutils
-from numba.extending import unbox, NativeValue
-from contextlib import ExitStack
-from numba.extending import box 
-from numba import njit
-from numba.core.errors import NumbaTypeError
-from numba.core.extending import overload_method
-import numba as nb
-import numpy as np
-from numpy import int64
-        )";
-        python_file << meta_code_for_numba << "\n";
+        //all print code goes into the read meta trait func and gets put into a new final with
+        //that trait nam
+        //then in the main pythin you need to import that same fin
+ 
         python_file << "import re\n"
                     << "import sys\n"
                     << "import inspect\n"
                     << "import subprocess\n"
+                    << "import numba as nb\n"
                     << "\n"
                     << "from llvmlite import binding\n"
                     << "\n"
                     << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n\n\n";
-
-        std::string meta_code_declaring_types = R"PY(
-class MyPrint(object):
-    def __init__(self, kind):
-        self.kind = kind
-
-    def __repr__(self):
-        return f"MyPrint({self.kind})"
-
-class MyPrintType(types.Type):
-    def __init__(self,kind):
-        self.kind = kind
-        #do we need to add a kind
-        super(MyPrintType, self).__init__(name=f"MyPrintType({kind})")
-
-my_print_set = {}
-@staticmethod
-def my_print_type(kind):
-    if not kind in my_print_set:
-        my_print_set[kind] = MyPrintType(kind)
-        
-    return my_print_set[kind]        
-        )PY";
-
-        python_file << meta_code_declaring_types << "\n";
 
         
         addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
@@ -413,179 +457,6 @@ def my_print_type(kind):
 
         python_file << map_contents;
         */
-        std::string meta_code_overload = R"PY(
-record_type = nb.from_dtype(np.dtype([('first_arg', np.float64), ('second_arg', np.int64)]))
-#@overload_method(MyPrintType, '__call__')
-#def call_overload_2_arg(self, val):
-#    extern_fn = meta_print_ext_map[self]
-
-@overload_method(MyPrintType, '__call__')
-def call_overload_ffi(self, ctx, val):
-
-    extern_fn = meta_print_ext_map[self]
-
-    def impl(self, ctx, val):
-        return extern_fn(ctx, val)
-
-    return impl
-        )PY";
-
-        python_file << meta_code_overload << "\n";
-
-        std::string meta_code_for_processing_types = R"PY(
-@lower_builtin(MyPrintType, MyPrintType, types.VarArg(types.Any))
-def method_impl(context, builder, sig, args):
-    print("METHOD IMPLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
-    typing_context = context.typing_context
-    overload = call_overload_ffi
-    fnty = typing_context.resolve_value_type(overload)
-    sig = fnty.get_call_type(typing_context, sig.args, {})
-    sig = sig.replace(pysig=nb.core.utils.pysignature(overload))
-
-    call = context.get_function(fnty, sig)
-
-    context.add_linking_libs(getattr(call, 'libs', ()))
-    return call(builder, args)
-
-
-
-@typeof_impl.register(MyPrint)
-def typeof_index(val, c):
-    return my_print_type(val.kind)
-
-#as_numba_type.register(MyPrint, my_print_set)
-
-
-
-
-@type_callable(MyPrint)
-def type_my_print(context):
-    valid_type_set = set([nb.types.Integer,nb.types.Float, nb.types.Boolean,nb.types.functions.NumberClass, nb.types.int64, nb.types.int32, nb.types.float64, nb.types.float32, record_type, nb.types.void])
-    print(f"Valid type set is : {valid_type_set}")
-    def typer(kind):
-        print("")
-        print("")
-        print("___________________")
-        print("NON INSTANCE TYPE")
-        print(f"FOUND KIND: {kind} with type {type(kind)}")
-        if isinstance(kind,nb.types.TypeRef):
-            print("THIS IS A TYPEREF")
-            kind = kind.instance_type
-        if (isinstance(kind, nb.types.NumberClass)):
-            kind = kind.instance_type
-            print("______________________")
-            print("INSTANCE TYPE")
-            print(kind)
-            print("______________________")
-            print("")
-        if (isinstance(kind, nb.types.Record)):
-            print("THIS IS A RECORD")
-            
-        if kind in valid_type_set:
-                    print("_____________________________________________________")
-                    print("ENTERING VALID TYPE BRANCH")
-                    print("*************vali type")
-                    print("")
-                    print("88888888888888")
-                    print(kind)
-                    print("88888888888888")
-                    print(my_print_type(kind))
-                    print("_____________________________________________________")
-                    print("")
-                    return my_print_type(kind)
-                    
-        else:
-            raise NumbaTypeError(f"Type {kind} not in type set")
-    return typer 
-
-@register_model(MyPrintType)
-class MyPrintModel(models.StructModel):
-    #idt kind is part of self yet
-    def __init__(self, dmm, fe_type):
-        # we were trying to read directly in members for kind
-        members = []
-        models.StructModel.__init__(self, dmm, fe_type, members)
-
-#we need this right
-make_attribute_wrapper(MyPrintType, 'kind', 'kind')
-
-
-@lower_builtin(MyPrint, nb.types.Any)
-def impl_myprint(context, builder, sig, args):
-    typ = sig.return_type
-    #kind = args[0]
-    myprint = cgutils.create_struct_proxy(typ)(context, builder)
-    #  myprint.kind = kind
-    return myprint._getvalue()
-
-
-#do i have to specify multipke typles when assigning myprint
-@unbox(MyPrintType)
-def unbox_interval(typ, obj, c):
-    """
-    Convert a Interval object to a native interval structure.
-    """
-    is_error_ptr = cgutils.alloca_once_value(c.builder, cgutils.false_bit)
-    myprint = cgutils.create_struct_proxy(typ)(c.context, c.builder)
-
-    #with ExitStack() as stack:
-    #    kind_obj = c.pyapi.object_getattr_string(obj, "kind")
-    #    with cgutils.early_exit_if_null(c.builder, stack, kind_obj):
-    #       c.builder.store(cgutils.true_bit, is_error_ptr)
-    #    kind_native = c.unbox(nb.types.Any, kind_obj)
-    #    c.pyapi.decref(kind_obj)
-    #    with cgutils.early_exit_if(c.builder, stack, kind_native.is_error):
-    #       c.builder.store(cgutils.true_bit, is_error_ptr)
-
-     
-    #myprint.kind = kind_native.value
-       
-
-    return NativeValue(myprint._getvalue(), is_error=c.builder.load(is_error_ptr))
-        
-@box(MyPrintType)
-def box_interval(typ, val, c):
-    print(f"type from boxing: {typ}")
-  
-    ret_ptr = cgutils.alloca_once(c.builder, c.pyapi.pyobj)
-    fail_obj = c.pyapi.get_null_object()
-
-    with ExitStack() as stack:
-        #myprint = cgutils.create_struct_proxy(typ)(c.context, c.builder, value=val)
-        #kind_obj = c.box(nb.types.Any, myprint.kind)
-
-        #with cgutils.early_exit_if_null(c.builder, stack, kind_obj):
-        #    c.builder.store(fail_obj, ret_ptr)
-
-        class_obj = c.pyapi.unserialize(c.pyapi.serialize_object(MyPrint))
-        with cgutils.early_exit_if_null(c.builder, stack, class_obj):
-            #c.pyapi.decref(kind_obj)
-            c.builder.store(fail_obj, ret_ptr)
-
-        kind_obj = c.pyapi.unserialize(
-            c.pyapi.serialize_object(typ.kind)
-        )
-
-        #res = c.pyapi.call_function_objargs(class_obj, (kind_obj))
-        res = c.pyapi.call_function_objargs(class_obj, (kind_obj,))
-        c.pyapi.decref(kind_obj)
-        c.pyapi.decref(class_obj)
-        c.builder.store(res, ret_ptr)
-
-    return c.builder.load(ret_ptr)   
-
-@nb.njit
-def makeInstance(x):
-    retInstance = MyPrint(x)
-    return retInstance
-@nb.njit
-def test_print(my_print_instance, ctx, x):
-    my_print_instance(ctx, x)
-
-        
-        )PY";
-
-        python_file << meta_code_for_processing_types << "\n";
 
 
         /*
@@ -1181,6 +1052,34 @@ def test_print(my_print_instance, ctx, x):
 
         return result;
     }
+    static std::string toPascalCase(const std::string& name)
+    {
+        std::string result;
+        bool capitalize_next = true;
+
+        for (char c : name)
+        {
+            if (c == '_')
+            {
+                capitalize_next = true;
+                continue;
+            }
+
+            if (capitalize_next)
+            {
+                result += static_cast<char>(
+                    std::toupper(static_cast<unsigned char>(c))
+                );
+                capitalize_next = false;
+            }
+            else
+            {
+                result += c;
+            }
+        }
+
+        return result;
+    }
     template <typename T>
     struct ParamListToString;
 
@@ -1435,18 +1334,65 @@ void put_in_dict_file(std::fstream& dict_file){
     //traverse the specializations of Meta<print>
     template <typename CURRSET>
     void make_extern_map_for_single_meta_trait(std::fstream &gen_file, std::fstream &python_file, std::string meta_name, bool isCpp, bool is_for_CPU){
-        std::string extern_map = meta_name + "_ext_map = {";
+        std::string extern_map = "_" + meta_name + "_ext_map = {";
         std::string all_specialization_entries = make_all_meta_map_entries<CURRSET>(gen_file, python_file, meta_name, isCpp, is_for_CPU);
         std::cout << "\n\nSpecializerssss: " << all_specialization_entries << std::endl;
 
+        std::fstream meta_trait_python_file;
+        meta_trait_python_file.open(meta_name + ".py", std::ios::trunc | std::ios::out);
+        std::ifstream top_template_file("template.h");
+
+        std::string top_template_file_contents(
+            (std::istreambuf_iterator<char>(top_template_file)),
+            std::istreambuf_iterator<char>()
+        );
+        size_t start = top_template_file_contents.find("R\"PY(");
+        size_t end = top_template_file_contents.rfind(")PY\"");
+        if (start == std::string::npos || end == std::string::npos) {
+            std::cerr << "Could not find raw string delimiters\n";
+            return;
+        }
+        start += 5; // length of R"PY(
+        std::string top_code = top_template_file_contents.substr(start, end - start);
+        top_code = replaceAll(top_code, "__NAME__", "_" + meta_name);
+        top_code = replaceAll(top_code, "__TYPE__", toPascalCase(meta_name));
+
+
+
+        std::ifstream bottom_template_file("template2.h");
+        std::string bottom_template_file_contents(
+            (std::istreambuf_iterator<char>(bottom_template_file)),
+            std::istreambuf_iterator<char>()
+        );
+        start = bottom_template_file_contents.find("R\"PY(");
+        end = bottom_template_file_contents.rfind(")PY\"");
+        if (start == std::string::npos || end == std::string::npos) {
+            std::cerr << "Could not find raw string delimiters\n";
+            return;
+        }
+        start += 5; // length of R"PY(
+        std::string bottom_code = bottom_template_file_contents.substr(start, end - start);
+
+        bottom_code = replaceAll(bottom_code, "__TYPE__", toPascalCase(meta_name));
+        bottom_code = replaceAll(bottom_code, "__NAME__", "_" + meta_name);
+        std::cout << "\n\nCODEEEEEEEEEEEEEE" << std::endl;
+        std::cout << top_code << std::endl;
+        meta_trait_python_file << top_code << std::endl;
 
         std::string complete_extern_map_for_single_trait =
-            meta_name + "_ext_map = {" +
+            "_" + meta_name + "_ext_map = {" +
             indent(all_specialization_entries) +
             "\n}\n";
         
         std::cout << complete_extern_map_for_single_trait << std::endl;
-        python_file << complete_extern_map_for_single_trait;
+        meta_trait_python_file << complete_extern_map_for_single_trait << std::endl;
+        std::cout << "\n\nBOTTOM CODE" << std::endl;
+        std::cout << bottom_code << std::endl;
+        meta_trait_python_file << bottom_code << std::endl;
+      
+        //python_file << complete_extern_map_for_single_trait;
+        python_file << "import " << meta_name << std::endl;
+        //meta_trait_python_file 
     }
 
     template <typename CURRSET>
@@ -1465,7 +1411,7 @@ void put_in_dict_file(std::fstream& dict_file){
             std::cout << "\n\nTRAITSSSS " << trait_name_snake_case << std::endl;
 
             typedef As<CurrTrait, CONTEXT> sig_component;
-            std::string single_entry = ReadMetaFunction<typename sig_component::STable::EntriesTypeMap>::exec(isCpp, trait_name, gen_file, python_file, is_for_CPU, "");
+            std::string single_entry = ReadMetaFunction<typename sig_component::STable::EntriesTypeMap>::exec(isCpp, meta_name, trait_name, gen_file, python_file, is_for_CPU, "");
             std::cout << "single_entry: " << single_entry << std::endl;
             result += single_entry;
             result += make_all_meta_map_entries<typename CURRSET::MapType::TailType::KeySet>(gen_file, python_file, meta_name, isCpp, is_for_CPU);
@@ -1477,6 +1423,7 @@ void put_in_dict_file(std::fstream& dict_file){
                                             std::string extern_function_return_type,
                                             std::string extern_function_param_list,
                                             std::string reg_str_func_name,
+                                            std::string metaName,
                                             std::string traitName){
         std::string map_entry = "";
         size_t start = reg_str_func_name.find('<');
@@ -1486,20 +1433,21 @@ void put_in_dict_file(std::fstream& dict_file){
         
         std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
         //meta_specialization.push_back(numba_type);
-        std::string meta_handle = "my_" + traitName + "_type(" + numba_type + "):";
+        std::string meta_handle = "_" + metaName + "_type";
         map_entry = std::format(R"PY(
-my_print_type({}): nb.types.ExternalFunction(
+{}({}): nb.types.ExternalFunction(
     "{}",
     nb.core.typing.signature(
         {},
         {}
     )
 ),)PY",
+        meta_handle,
         numba_type,
         typemagic_mangle_name,
         extern_function_return_type,
         extern_function_param_list
-        );
+        );  
         return map_entry;
     }
 
@@ -1512,6 +1460,7 @@ my_print_type({}): nb.types.ExternalFunction(
     struct ReadMetaFunction<container::TypeMap<TAIL...>>
     {
         static std::string exec(bool isCpp, 
+                           std::string metaName, 
                            std::string traitName, 
                            std::fstream &gen_file, 
                            std::fstream &python_file, 
@@ -1527,6 +1476,7 @@ my_print_type({}): nb.types.ExternalFunction(
     struct ReadMetaFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
     {
          static std::string exec(bool isCpp, 
+                           std::string metaName,
                            std::string traitName, 
                            std::fstream &gen_file, 
                            std::fstream &python_file, 
@@ -1566,6 +1516,7 @@ my_print_type({}): nb.types.ExternalFunction(
                                             extern_function_return_type,
                                             extern_function_param_list,
                                             reg_str_func_name,
+                                            metaName, 
                                             traitName);
                 
                 write_function_to_cpp_file_cpu(gen_file,
@@ -1576,7 +1527,7 @@ my_print_type({}): nb.types.ExternalFunction(
                                             reg_str_func_name,
                                             arg_list);
             }
-            return map_entry + ReadMetaFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, result, func_index + 1);
+            return map_entry + ReadMetaFunction<container::TypeMap<TAIL...>>::exec(false, metaName, traitName, gen_file, python_file, is_for_CPU, result, func_index + 1);
         }
     };
 
@@ -1672,4 +1623,7 @@ using FFIGenModule = context::SimpleModule<
     Meta<FFIGenImpl>,
     context::RequirementSet<>,
     context::ImplementationSet<FFIGen>>;
+
+
+using LibRootModule = context::ModuleBundle<LogModule, SubOneModule, PrintModule, FFIGenModule>;
     

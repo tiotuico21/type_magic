@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include "logic.h"
 
-using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, SubOneModule, OddModule, EvenModule, StoppingTimeModule, PrintModule,FFIGenModule>;
-;
+
+using RootModule = context::ModuleBundle<AddOneModule, AddItModule, SubArgsModule, IsTrueModule, EvenModule, OddModule, StoppingTimeModule, LibRootModule>;
 
 template <typename CTX>
 void run()
@@ -44,7 +44,7 @@ int main()
 
 typedef typename BaseInputState
     ::template SetItem<key::RequirementSet, 
-TypeSet<AddOne, AddIt, SubArgs, IsTrue, Even, Odd, StoppingTime, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<SubArgs>, FFIEntry<IsTrue>, FFIEntry<Even>, FFIEntry<Odd>, FFIEntry<StoppingTime>, SubOne, FFIEntry<SubOne>, Print<int>, FFIEntry<Print<int>>, Print<float>, FFIEntry<Print<float>>, FFIGen>
+TypeSet<AddOne, AddIt, SubArgs, IsTrue, Even, Odd, StoppingTime, FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<SubArgs>, FFIEntry<IsTrue>, FFIEntry<Even>, FFIEntry<Odd>, FFIEntry<StoppingTime>, SubOne, FFIEntry<SubOne>, Print<int>, Print<float>, FFIEntry<Print<int>>, FFIEntry<Print<float>>, Log<int>, Log<float>, FFIEntry<Log<int>>, FFIEntry<Log<float>>, FFIGen>
 			>::type StandardTraits;
         run<typename context::CreateContextType<StandardTraits>::type>();
         return 0;
