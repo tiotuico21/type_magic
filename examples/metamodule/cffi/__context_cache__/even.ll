@@ -5,7 +5,7 @@ target triple = "x86_64-unknown-linux-gnu"
 
 @_ZN08NumbaEnv8__main__4evenB2v6B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax = common local_unnamed_addr global ptr null
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x74357c867e10>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x74357c867e10>\00"
+@".const.<numba.core.cpu.CPUContext object at 0x74b7ba333e10>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x74b7ba333e10>\00"
 @_ZN08NumbaEnv10meta_print12makeInstanceB2v7B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE16class_28int32_29 = common local_unnamed_addr global ptr null
 @_ZN08NumbaEnv10meta_print16test__meta_printB2v8B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE26MyMetaPrintType_28int32_297void_2ax = common local_unnamed_addr global ptr null
 @PyExc_StopIteration = external global i8
@@ -64,7 +64,7 @@ common.ret:                                       ; preds = %entry, %.23
   ret i64 %.18
 
 .23:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x74357c867e10>")
+  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x74b7ba333e10>")
   call void @PyErr_WriteUnraisable(ptr %.71)
   call void @Py_DecRef(ptr %.71)
   call void @numba_gil_release(ptr nonnull %.20)

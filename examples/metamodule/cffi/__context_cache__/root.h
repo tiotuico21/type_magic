@@ -23,6 +23,7 @@
 #include "template.h"
 #include <iostream>
 
+//used for receiving template files and adding custom class and function names
 static std::string replaceAll(
     std::string str,
     const std::string& from,
@@ -44,6 +45,8 @@ static std::string query(){
     return __PRETTY_FUNCTION__;
 }
 
+//function to get type name from context without going past the limit
+//typeid causes 
 template <typename TYPE>
 static std::string get_type_name(){
     std::string voidPRETTY = query<void>();
@@ -81,6 +84,8 @@ std::vector<std::string> extern_func_param = {
 	"(retptr, ptr, arg1)"
 };
 
+//function for each conversion between cpp and numba types when
+//having to generate a py file
 std::string static cppToNumbaType(std::string cppType)
 {
     static const std::unordered_map<std::string, std::string> typeMap = {
@@ -203,7 +208,8 @@ struct FFIGen
 {
 };
 
-
+//struct that essentially keeps the function pointers for each component
+//im a tanle anf each can get called using the key TRAIT 
 template <typename... ENTRIES>
 struct StaticTable
 {
@@ -377,12 +383,14 @@ typedef context::ModuleBundle<
 > PrintModule;
 
 
-
+//outdated function
 template <typename Class, typename... Types>
 struct TypeList
 {
 };
 
+//used to create a predictable template that we can access its arguments
+//to parse through a trait function component
 template <typename T>
 struct PureFnEq;
 
@@ -397,7 +405,8 @@ struct PureFnEq<RES (CLASS::*)(ARGS...)>
 
 template <typename CONTEXT>
 struct FFIGenImpl{
-
+    //primary call function that begins generation of code
+    //opens all files and calls all recursive functions 
     void genffi(std::string client_logic_header_file, bool is_for_CPU)
     {
         std::fstream header_file;
@@ -409,7 +418,9 @@ struct FFIGenImpl{
         //all print code goes into the read meta trait func and gets put into a new final with
         //that trait nam
         //then in the main pythin you need to import that same fin
- 
+        
+
+        //add imports to generated file
         python_file << "import re\n"
                     << "import sys\n"
                     << "import inspect\n"
@@ -420,49 +431,12 @@ struct FFIGenImpl{
                     << "\n"
                     << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n\n\n";
 
-        
         addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
         addFunctionBody(cpp_file, python_file, is_for_CPU);
         header_file.close();
         cpp_file.close();
 
-        /*
-        for (size_t i = 0; i < extern_func_headers.size(); ++i)
-        {
-            python_file << "@nb.njit(cache=False)\n";
-            python_file << extern_func_headers[i] << "\n\t"
-                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
-        }
-        
-
-        std::string map_contents = "my_print_ext_map = {\n";
-
-        for (size_t k = 0; k < extern_meta_headers.size(); ++k)
-        {
-            map_contents +=
-                "    my_print_type(" +
-                meta_specialization[k] +
-                "): " +
-
-                // Indent every line AFTER the first line
-                indent_after_first_line(
-                    extern_meta_headers[k],
-                    4
-                ) +
-
-                ",\n";
-        }
-
-        map_contents += "}\n\n";
-
-        python_file << map_contents;
-        */
-
-
-        /*
-        def print_int(ptr, arg1):
-	        return extern__TYPEMAGICN5PrintIiE7PrintFnE(ptr, arg1)
-        */
+       
         std::cout << python_file.is_open() << '\n';
         python_file.close();
 
@@ -473,6 +447,8 @@ struct FFIGenImpl{
     }
 
 
+    //goes through each trait and reads its impl component and parses through the functions accordingly
+    //to make c++ bindings
     template <typename T>
     void addFunctionGenRecurse(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
@@ -493,6 +469,7 @@ struct FFIGenImpl{
             typedef As<CurrTrait, CONTEXT> sig_component;
 
             std::string func_sig = get_type_name<CONTEXT>(); 
+            //uses a flag to generate either c++ header and cpp files 
             if (isCpp)
             {
                 ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_name, gen_file, python_file, is_for_CPU);
@@ -528,7 +505,7 @@ struct FFIGenImpl{
         return result;
     }
 
-
+    //makes extern definition in generated python file for a given function in a component for cpu
     static void write_extern_to_python_file_cpu(std::fstream &python_file,
                                     std::string typemagic_mangle_name,
                                     std::string extern_function_return_type,
@@ -548,7 +525,7 @@ struct FFIGenImpl{
 
     }
 
-
+    //makes extern definition in generated python file for a given function in a component for gpu
     static void write_extern_to_python_file_gpu(std::fstream &python_file,
                                                 std::string reg_str_func_name,
                                                 std::string typemagic_mangle_name,
@@ -561,6 +538,9 @@ struct FFIGenImpl{
         //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
         extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
     }
+
+    //makes the function definitions in a generated c++ file for a given function
+    //in a component for cpu
     static void write_function_to_cpp_file_cpu(std::fstream &gen_file,
                                   std::string resultType,
                                   std::string typemagic_mangle_name,
@@ -602,7 +582,8 @@ struct FFIGenImpl{
     
     }
 
-
+    //makes the function definitions in a generated c++ file for a given function
+    //in a component for gpu
     static void write_function_to_cpp_file_gpu(std::fstream &gen_file,
                                                std::string typemagic_mangle_name,
                                                std::string resultType,
@@ -644,6 +625,8 @@ struct FFIGenImpl{
                     << std::endl;
     }
    
+    //makes the function definitions in a generated header file for a given function
+    //in a component for cpu
     static void write_header_to_cpp_file_cpu(std::fstream &gen_file,
                                              std::string resultType,
                                              std::string typemagic_mangle_name,
@@ -660,6 +643,8 @@ struct FFIGenImpl{
             << std::endl;
     }
 
+    //makes the function definitions in a generated header file for a given function
+    //in a component for gpu
     static void write_header_to_cpp_file_gpu(std::fstream &gen_file,
                                              std::string resultType,
                                              std::string typemagic_mangle_name,
@@ -676,6 +661,8 @@ struct FFIGenImpl{
             << std::endl;
     }
 
+    //makes the parameter list for the njit function in the generated python file
+    //this is used to make the function call to the extern function
     static std::string make_njit_param_list(int param_amount){
         std::string param_list = "ptr";
         if (param_amount == 0){
@@ -688,6 +675,7 @@ struct FFIGenImpl{
         return param_list;
     }
    
+    //specialzilized structs to iterate through a component and parse through each function it has
     template <typename... T>
     struct ReadEveryFunction;
 
@@ -701,11 +689,16 @@ struct FFIGenImpl{
         }
     };
 
+    //The key is the trait name and the item is the function signature,
+    //this struct wraps a function that gets recursively called to parse through 
+    //each function in a component and generate the appropriate code for it
+
     template <typename KEY, typename ITEM, typename... TAIL>
     struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
     {
         static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
         {
+            //strings to create handles in the generated files for the function name and its parameters
             std::string mangle_func_name = typeid(KEY).name();
             std::string typemagic_mangle_name = "_TYPEMAGIC" + mangle_func_name;
             size_t pos = typemagic_mangle_name.find("N");
@@ -717,6 +710,9 @@ struct FFIGenImpl{
 
             std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
 
+            //in charge of the extern definitions and njit definitions fir generated python files
+            //in charge as well of the cpp definitions and implementions for generated c++ file to make
+            //shared library
             if (isCpp)
             {
                 typedef typename ITEM::Args method_args_list;
@@ -738,24 +734,8 @@ struct FFIGenImpl{
                 std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
 
 
+                //flag for making the extern definitions that are compatible with cpu
                 if (is_for_CPU){
-                    //python_file << "extern_" << toSnakeCase(reg_str_func_name) << " = numba.types.ExternalFunction(\n\t\""
-                    
-                  
-                        /*
-                        @nb.njit(cache=False)
-                    def add_one(ptr, arg1, arg2, arg3):
-                        return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
-
-                        extern_linker_headers.push_back("extern_" + typemagic_mangle_name);
-
-                          for (size_t i = 0; i < extern_func_headers.size(); ++i)
-        {
-            python_file << "@nb.njit(cache=False)\n";
-            python_file << extern_func_headers[i] << "\n\t"
-                        << "return " << extern_linker_headers[i] << extern_func_param[i] << "\n\n";
-        }
-                        */
                 
                     write_extern_to_python_file_cpu(python_file,
                                                 typemagic_mangle_name, 
@@ -776,18 +756,9 @@ struct FFIGenImpl{
                                 << "return extern_" << typemagic_mangle_name
                                 << "(" << njit_param_list + ")\n\n";
 
-                
-
-
-                    /*
-                    @nb.njit(cache=False)
-                    def add_one(ptr, arg1, arg2, arg3):
-                        return extern__TYPEMAGICNAddOne6CallFnE(ptr, arg1, arg2, arg3)
-
-                    */
-
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
+                //flag for making the extern definitions that are compatible with gpu
                 else{
 
                     write_extern_to_python_file_gpu(python_file,
@@ -795,7 +766,6 @@ struct FFIGenImpl{
                                                     typemagic_mangle_name, 
                                                     extern_function_return_type,
                                                     extern_function_param_list);
-                    //extern_linker_headers.push_back("extern_" + toSnakeCase(reg_str_func_name) + "_gpu");
                    
                     write_function_to_cpp_file_gpu(gen_file,
                                                    typemagic_mangle_name,
@@ -807,6 +777,7 @@ struct FFIGenImpl{
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(true, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
             }
+            //create the header files for the generated c++ file that will be compiled into a shared library
             else
             {
                 typedef typename ITEM::Args method_args_list;
@@ -825,21 +796,19 @@ struct FFIGenImpl{
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
                 else{
-                    write_header_to_cpp_file_cpu(gen_file,
+                    write_header_to_cpp_file_gpu(gen_file,
                                                  resultType,
                                                  typemagic_mangle_name,
                                                  header);
                     ReadEveryFunction<container::TypeMap<TAIL...>>::exec(false, traitName, gen_file, python_file, is_for_CPU, func_index + 1);
                 }
-                
-                // ParamListToString<container::TypeArray<TAIL...>>::makeString(index + 1, includeType)
             }
         }
     };
-
-
     
-
+    //adds the constructor function to the generated files for a given component
+    //creates the extern and njtit definition in the generated python file for a given context
+    //creates the constructor function in the generated c++ file for a given context
     void addConstructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
@@ -872,6 +841,7 @@ struct FFIGenImpl{
         // container::repr::type_name<CONTEXT>()
         if (isCpp)
         {
+            //different c++ function cpp definitions for cpu and gpu
             if (is_for_CPU){
                 gen_file << "extern \"C\" void* construct()";
                 gen_file << "{"
@@ -910,7 +880,8 @@ struct FFIGenImpl{
         }
     }
      
-
+    //adds the destructor function to the generated files for a given context
+    //creates the extern and njtit definition for the destructor as well in the python file
     void addDestructor(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU)
     {
 
@@ -972,8 +943,8 @@ struct FFIGenImpl{
         } 
     }
 
-
-     static std::string toSnakeCase(std::string &trait_name)
+    //takes a non-generic trait name and puts it into snake case
+    static std::string toSnakeCase(std::string &trait_name)
     {
         std::string snake_case_trait_name;
 
@@ -998,7 +969,7 @@ struct FFIGenImpl{
         return snake_case_trait_name;
     }
 
-
+    //takes a meta trait name and puts it into snake case 
     static std::string toSnakeCaseMeta(const std::string& trait_name)
     {
         size_t start = trait_name.find('<');
@@ -1012,7 +983,7 @@ struct FFIGenImpl{
             return trait_name;
         }
 
-        // Get "Meta" and "Print"
+        // Get "Meta" and inner trait name 
         std::string prefix = trait_name.substr(0, start);
         std::string inner  = trait_name.substr(start + 1, end - start - 1);
 
@@ -1052,6 +1023,8 @@ struct FFIGenImpl{
 
         return result;
     }
+
+    //takes a trait name and puts it into pascal case
     static std::string toPascalCase(const std::string& name)
     {
         std::string result;
@@ -1080,10 +1053,16 @@ struct FFIGenImpl{
 
         return result;
     }
+
+    //reads a parameter list parsed from a function in a trait component and puts it into
+    //a string  usually specializaed structs 
+    //has a flag for cpp and python so that it can do it accordingly for numba formats in
+    //python
     template <typename T>
     struct ParamListToString;
 
     // template <typename... ARGS>
+    //for when the type array is empty, returns an empty string
     template <typename... TAIL>
     struct ParamListToString<container::TypeArray<TAIL...>>
     {
@@ -1093,6 +1072,15 @@ struct FFIGenImpl{
         }
     };
 
+    
+    //if still contents in the type array:
+    // -make given param into a string
+    // -put into numba format if forPython flag is set to true and c++ otherwise
+    // -recursively call the function to get the rest of the param list
+    // -also based on the includeType flag will either include the type
+    // or just the parameter name in the string
+    // -good for when either having the param list in the header of a cpp function
+    // body of the cpp function or the njit function in the generated python file
     template <typename HEAD, typename... TAIL>
     struct ParamListToString<container::TypeArray<HEAD, TAIL...>>
     {
@@ -1155,7 +1143,8 @@ struct FFIGenImpl{
         }
     };
 
-
+    //used before to insert a param list into the generated c++ file but
+    //using a static table has made this outdated 
     int findSpace(std::string func_sig)
     {
         bool entered = false;
@@ -1185,7 +1174,8 @@ struct FFIGenImpl{
         return -1;
     }
 
-
+    //specialized struct for giving a bool value if a given trait is a specialization of a meta
+    //trait to facilitating filtering for each type set 
     template <typename T>
     struct IsSpecialization{
         static constexpr bool value = false;
@@ -1195,6 +1185,9 @@ struct FFIGenImpl{
     struct IsSpecialization<TEMPLATE<T>>{
         static constexpr bool value = true;
     };
+
+    //specialized struct for getting the template of a given meta type and being able
+    //to wrap it in Meta 
     template <typename T>
     struct GetTemplate{
         typedef T type;
@@ -1205,6 +1198,7 @@ struct FFIGenImpl{
         typedef Meta<TEMPLATE> type;
     };
 
+    //specialized struct for checking if a given trait has an FFI entry in the trait map
     template <typename TRAITMAP>
     struct FFIDetector {
         template <typename TRAIT>
@@ -1213,102 +1207,8 @@ struct FFIGenImpl{
         };
     };
 
-
-    /*
-    template <typename T>
-void put_in_dict_file(std::fstream& dict_file){
-    using namespace container;
-    using namespace context;
-
-    if constexpr (std::is_same<T, container::TypeSet<>>::value)
-    {
-        return;
-    }
-    else{
-        typedef typename T::MapType::HeadItemType CurrTrait;
-
-        if (IsMeta<CurrTrait>::value){
-            std::string FullTrait = container::repr::type_name<CurrTrait>();
-            size_t start = FullTrait.find('<');
-            size_t end = FullTrait.find('>', start); 
-
-            std::string InnerTrait = FullTrait.substr(start + 1, end - start -1);
-            
-            dict_file << "def " << InnerTrait << "(*args):";
-            dict_file << "\n\treturn {cpp_name: \"" << InnerTrait
-                      << "<\"+\",\".join(*args)+\">\"}\n";
-            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
-        }
-        else{
-            typedef typename T::MapType::HeadItemType CurrTrait;
-            dict_file << container::repr::type_name<CurrTrait>();
-            dict_file << " = { cpp_name: \"" << container::repr::type_name<CurrTrait>() << "\"}\n\n";
-            put_in_dict_file<typename T::MapType::TailType::KeySet>(dict_file);
-        }
-         
-    }
-}
-    */
-    //CFFIMeta::KeySet::template FIler<M::template Generalizes>::type my_meta_set
-
-
-    /*
-      std::cout << "*************KEY: " << reg_str_func_name.substr(0, 5)  << std::endl;
-                        size_t start = reg_str_func_name.find('<');
-                        size_t end = reg_str_func_name.find('>', start);
-
-                        std::string cpp_print_type = reg_str_func_name.substr(start + 1, end - start - 1);
-                        
-                        std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
-                        meta_specialization.push_back(numba_type);
-                        std::string extern_python_function =
-                        "nb.types.ExternalFunction(\n"
-                        "    \"" + typemagic_mangle_name + "\",\n"
-                        "    nb.core.typing.signature(\n"
-                        "        " + extern_function_return_type + ",\n"
-                        "        " + extern_function_param_list + "\n"
-                        "    )\n"
-                        ")";
-
-                      
-                        extern_meta_headers.push_back(extern_python_function);
-    */
-
-    /*
-    
-    template <typename... T>
-    struct ReadEveryFunction;
-
-    template <typename... TAIL>
-    struct ReadEveryFunction<container::TypeMap<TAIL...>>
-    {
-
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
-        {
-            return;
-        }
-    };
-
-    template <typename KEY, typename ITEM, typename... TAIL>
-    struct ReadEveryFunction<container::TypeMap<container::Binding<KEY, ITEM>, TAIL...>>
-    {
-        static void exec(bool isCpp, std::string traitName, std::fstream &gen_file, std::fstream &python_file, bool is_for_CPU, int func_index = 0)
-        {
-
-         typedef typename T::MapType::HeadItemType CurrFFISpec;
-            typedef typename GetTemplateArgs<CurrFFISpec>::template ItemAt<0>::type CurrTrait;
-            std::string typenameMangle = typeid(CurrTrait).name();
-            std::string generated_func_name = "_TYPEMAGIC" + typenameMangle + container::repr::type_name<CurrTrait>();
-            std::string trait_name = get_type_name<CurrTrait>();
-            std::string trait_name_snake_case = toSnakeCase(trait_name);
-
-            typedef As<CurrTrait, CONTEXT> sig_component;
-
-            std::string func_sig = get_type_name<CONTEXT>(); 
-            if (isCpp)
-            {
-                ReadEveryFunction<typename sig_component::STable::EntriesTypeMap>::exec(true, trait_n
-    */
+    //takes a typeset of just all generic traits and processes them into the c++ and python files 
+    //for the bindings 
     template <typename T>
     void handle_every_generic_trait(std::fstream &gen_file, std::fstream &python_file, bool isCpp, bool is_for_CPU){
         if constexpr(std::is_same<T, container::TypeSet<>>::value){
@@ -1319,6 +1219,8 @@ void put_in_dict_file(std::fstream& dict_file){
             std::cout << "\n\nHEad: " << container::repr::type_name<CurrTrait>() << "/n/n" << std::endl;
          
 
+            //make a typeset of all the specializations of ONE 
+            //given generic trait 
             typedef typename  CONTEXT::TraitMap::KeySet::template Filter<CurrTrait::template Generalizes>::type MyMetaSet;
             std::string meta_trait_name = get_type_name<CurrTrait>();
             std::string meta_camel_name = toSnakeCaseMeta(meta_trait_name);
@@ -1331,13 +1233,17 @@ void put_in_dict_file(std::fstream& dict_file){
         }
     }
 
-    //traverse the specializations of Meta<print>
+    //traverse the specializations of a single meta trait and traverse through all its specializations
     template <typename CURRSET>
     void make_extern_map_for_single_meta_trait(std::fstream &gen_file, std::fstream &python_file, std::string meta_name, bool isCpp, bool is_for_CPU){
         std::string extern_map = "_" + meta_name + "_ext_map = {";
+
+        //creates an extern map of all the overload functions for numba 
         std::string all_specialization_entries = make_all_meta_map_entries<CURRSET>(gen_file, python_file, meta_name, isCpp, is_for_CPU);
         std::cout << "\n\nSpecializerssss: " << all_specialization_entries << std::endl;
 
+        //uses a template and generates the necessary numba libary functions to facilitate
+        //overloads
         std::fstream meta_trait_python_file;
         meta_trait_python_file.open(meta_name + ".py", std::ios::trunc | std::ios::out);
         std::ifstream top_template_file("template.h");
@@ -1395,6 +1301,9 @@ void put_in_dict_file(std::fstream& dict_file){
         //meta_trait_python_file 
     }
 
+    //traverse through all the specializations of a given meta trait and make the necessary
+    //extern map entries for each specialization and put them into a string to be used in the
+    //generated python file
     template <typename CURRSET>
     static std::string make_all_meta_map_entries(std::fstream &gen_file, std::fstream &python_file, std::string meta_name, bool isCpp, bool is_for_CPU){
         if constexpr(std::is_same<CURRSET, container::TypeSet<>>::value){
@@ -1419,6 +1328,7 @@ void put_in_dict_file(std::fstream& dict_file){
         }
     }
 
+    //this generates the single entry of the extern map that allows for overloads 
     static std::string meta_single_entry_generator(std::string typemagic_mangle_name,
                                             std::string extern_function_return_type,
                                             std::string extern_function_param_list,
@@ -1434,6 +1344,8 @@ void put_in_dict_file(std::fstream& dict_file){
         std::string numba_type = "nb." + cppToNumbaType(cpp_print_type);
         //meta_specialization.push_back(numba_type);
         std::string meta_handle = "_" + metaName + "_type";
+        //uses the values it parsed from the given trait specialization
+        //to add into the format string 
         map_entry = std::format(R"PY(
 {}({}): nb.types.ExternalFunction(
     "{}",
@@ -1452,7 +1364,8 @@ void put_in_dict_file(std::fstream& dict_file){
     }
 
       
-
+    //this for reading all the functions of a component that is wrapped in meta
+    //
     template <typename... T>
     struct ReadMetaFunction;
 
@@ -1512,6 +1425,8 @@ void put_in_dict_file(std::fstream& dict_file){
                 std::string extern_function_param_list = ParamListToString<outter_args_list>::makeString(0, true, true);
 
 
+                //makes a single map entry and returns a string to 
+                //eventually create a list to be put into map 
                 map_entry = meta_single_entry_generator(typemagic_mangle_name,
                                             extern_function_return_type,
                                             extern_function_param_list,
@@ -1519,6 +1434,7 @@ void put_in_dict_file(std::fstream& dict_file){
                                             metaName, 
                                             traitName);
                 
+                //creates the extern definitions and njit definitions for the generated python file
                 write_function_to_cpp_file_cpu(gen_file,
                                             resultType,
                                             typemagic_mangle_name,
@@ -1531,6 +1447,7 @@ void put_in_dict_file(std::fstream& dict_file){
         }
     };
 
+    //helper function to correctly indent someone generated function code
     static std::string indent(
     const std::string& text,
     const std::string& prefix = "    ")
