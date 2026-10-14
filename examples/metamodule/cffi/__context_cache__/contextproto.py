@@ -137,6 +137,7 @@ using FFIGenModule = context::SimpleModule<
     '''
         return str_ffi_module
         
+
     
               
     @staticmethod
@@ -160,7 +161,7 @@ using FFIGenModule = context::SimpleModule<
         str_helper_funcs = f"{str_snake_case_func}{str_param_to_string}{str_find_space}{str_ffi_header_body_generator}"
         return f"{str_struct_header}{str_recurse_logic}{str_init_and_clean}{str_helper_funcs}{str_footer}{str_module}"
 
-    
+    #generates the main.cpp file for creating the files for the library  
     @staticmethod
     def make_main_cpp_file(fn_list, inherited_trait_list, is_for_cpu):
         str_run_method = '''
@@ -212,6 +213,7 @@ void run()
         str_main_method = FFIGenCodeGetter.make_main_func_in_main_cpp(fn_list, inherited_trait_list)
         str_main_cpp = str_run_method + str_main_method
         return str_main_cpp
+
 
     @staticmethod
     def make_main_func_in_main_cpp(fn_list, inherited_trait_list):
