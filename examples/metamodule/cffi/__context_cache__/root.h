@@ -414,7 +414,7 @@ struct FFIGenImpl{
         std::fstream python_file;
         header_file.open("cffi.h", std::ios::trunc | std::ios::out);
         cpp_file.open("cffi.cpp", std::ios::trunc | std::ios::out);
-        python_file.open("test_ffi.py", std::ios::trunc | std::ios::out);
+        python_file.open("python_bindings.py", std::ios::trunc | std::ios::out);
         //all print code goes into the read meta trait func and gets put into a new final with
         //that trait nam
         //then in the main pythin you need to import that same fin
@@ -1473,7 +1473,10 @@ struct FFIGenImpl{
 
         return result;
     }
-        
+
+
+    //gets called by the primary genffi function and is in charge of creating both the non generic
+    //and generic trait set to be traversed to make all the headers in the .h file 
     void addFunctionHeaders(std::fstream &header_file, std::fstream &python_file, std::string client_header, bool is_for_CPU)
     {
         header_file << "#include <thread>"
@@ -1495,6 +1498,9 @@ struct FFIGenImpl{
         addDestructor(header_file, python_file, false, is_for_CPU);
     }
 
+    //gets called by genffi and is in charge of creating the type set for both generic and non generic
+    //trait sets and calls the respective recursive functions to generate the code onto the files
+    //to make the python and c++ bindings 
     void addFunctionBody(std::fstream &cpp_file, std::fstream &python_file, bool is_for_CPU)
     {
         //std::cout << "adding function body" << std::endl;
@@ -1536,6 +1542,7 @@ struct FFIGenImpl{
 };
 
 
+//ffi module to get put into the context as well as lib root module to be included in the main modules
 using FFIGenModule = context::SimpleModule<
     Meta<FFIGenImpl>,
     context::RequirementSet<>,

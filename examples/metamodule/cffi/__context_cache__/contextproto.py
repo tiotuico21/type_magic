@@ -667,7 +667,7 @@ def my_print(value: int):
 
 def add_one(ctx: CONTEXT, arg1: float, arg2: bool, arg3: float) -> float:
     #imported_ctx = magic.test_ffi.construct()
-    val = magic.test_ffi.add_it(ctx)
+    val = magic.python_bindings.add_it(ctx)
     if (arg2):
         return arg1 
     return val + arg3
@@ -687,28 +687,28 @@ def add_it(ctx: CONTEXT) -> int:
 
 def even(ctx: CONTEXT, arg1: int) -> int:
     arg1 = arg1 // 2
-    printInstance = magic.test_ffi.meta_print.makeInstance(numba.types.int32)
-    magic.test_ffi.meta_print.test__meta_print(printInstance, ctx, arg1)
+    printInstance = magic.python_bindings.meta_print.makeInstance(numba.types.int32)
+    magic.python_bindings.meta_print.test__meta_print(printInstance, ctx, arg1)
     if (arg1 % 2 == 0):
-        iter = magic.test_ffi.even(ctx, arg1) 
+        iter = magic.python_bindings.even(ctx, arg1) 
     elif arg1 != 1:
-        iter = magic.test_ffi.odd(ctx, arg1) 
+        iter = magic.python_bindings.odd(ctx, arg1) 
     return iter + 1
     
 def odd(ctx: CONTEXT, arg1: int) -> int:
     #imported_ctx = magic.test_ffi.construct()
     arg1  = arg1 * 3 + 1
-    iter = magic.test_ffi.even(ctx, arg1)
+    iter = magic.python_bindings.even(ctx, arg1)
     return iter + 1
 
 def stopping_time(ctx: CONTEXT, arg1: int) -> int:
-    imported_ctx = magic.test_ffi.construct()
+    imported_ctx = magic.python_bindings.construct()
     iter = 0
     if arg1 % 2 == 0:
-        iter = magic.test_ffi.even(imported_ctx, arg1) 
+        iter = magic.python_bindings.even(imported_ctx, arg1) 
     else:
-        iter = magic.test_ffi.odd(imported_ctx, arg1) 
-    magic.test_ffi.destruct(imported_ctx)
+        iter = magic.python_bindings.odd(imported_ctx, arg1) 
+    magic.python_bindings.destruct(imported_ctx)
     return iter
 
 '''

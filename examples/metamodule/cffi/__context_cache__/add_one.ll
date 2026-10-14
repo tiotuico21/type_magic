@@ -7,8 +7,8 @@ target triple = "x86_64-unknown-linux-gnu"
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x74b7ba330fc0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x74b7ba330fc0>\00"
-@_ZN08NumbaEnv8test_ffi6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
+@".const.<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>\00"
+@_ZN08NumbaEnv15python_bindings6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
 
 define noundef range(i32 -1, -2) i32 @_ZN8__main__7add_oneB2v1B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2afbf(ptr noalias nocapture writeonly initializes((0, 4)) %retptr, ptr noalias nocapture readnone %excinfo, ptr %arg.ctx, float %arg.arg1, i8 %arg.arg2, float %arg.arg3) local_unnamed_addr {
 B0.endif:
@@ -43,7 +43,7 @@ common.ret:                                       ; preds = %entry, %.26
   ret float %.21
 
 .26:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.74 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x74b7ba330fc0>")
+  %.74 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>")
   call void @PyErr_WriteUnraisable(ptr %.74)
   call void @Py_DecRef(ptr %.74)
   call void @numba_gil_release(ptr nonnull %.23)
@@ -89,5 +89,5 @@ declare i32 @_TYPEMAGICNAddIt6CallFnE(ptr) local_unnamed_addr
 attributes #0 = { noinline }
 
 !0 = !{!1}
-!1 = distinct !{!1, !2, !"_ZN8test_ffi6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
-!2 = distinct !{!2, !"_ZN8test_ffi6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}
+!1 = distinct !{!1, !2, !"_ZN15python_bindings6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
+!2 = distinct !{!2, !"_ZN15python_bindings6add_itB2v2B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}

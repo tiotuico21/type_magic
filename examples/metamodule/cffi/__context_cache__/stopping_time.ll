@@ -7,11 +7,11 @@ target triple = "x86_64-unknown-linux-gnu"
 @PyExc_StopIteration = external global i8
 @PyExc_SystemError = external global i8
 @".const.unknown error when calling native function" = internal constant [43 x i8] c"unknown error when calling native function\00"
-@".const.<numba.core.cpu.CPUContext object at 0x74b7ba332fd0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x74b7ba332fd0>\00"
-@_ZN08NumbaEnv8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
-@_ZN08NumbaEnv8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
+@".const.<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>" = internal constant [53 x i8] c"<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>\00"
+@_ZN08NumbaEnv15python_bindings9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv15python_bindings4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv15python_bindings3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax = common local_unnamed_addr global ptr null
+@_ZN08NumbaEnv15python_bindings8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a = common local_unnamed_addr global ptr null
 
 define noundef range(i32 -1, -2) i32 @_ZN8__main__13stopping_timeB3v13B52c8tJTIeFIjxB2IKSgI4CrvQClUYkACQB1EiFSRRB9GgCAA_3d_3dE7void_2ax(ptr noalias nocapture writeonly initializes((0, 8)) %retptr, ptr noalias nocapture readnone %excinfo, ptr nocapture readnone %arg.ctx, i64 %arg.arg1) local_unnamed_addr {
 B0.endif.else.if:
@@ -56,7 +56,7 @@ common.ret:                                       ; preds = %entry, %.23
   ret i64 %.18
 
 .23:                                              ; preds = %entry.if.endif, %entry.if.endif.endif.endif, %entry.if.endif.if
-  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x74b7ba332fd0>")
+  %.71 = call ptr @PyUnicode_FromString(ptr nonnull @".const.<numba.core.cpu.CPUContext object at 0x7d41cb864fc0>")
   call void @PyErr_WriteUnraisable(ptr %.71)
   call void @Py_DecRef(ptr %.71)
   call void @numba_gil_release(ptr nonnull %.20)
@@ -108,14 +108,14 @@ declare ptr @destructor(ptr) local_unnamed_addr
 attributes #0 = { noinline }
 
 !0 = !{!1}
-!1 = distinct !{!1, !2, !"_ZN8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE: %retptr"}
-!2 = distinct !{!2, !"_ZN8test_ffi9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE"}
+!1 = distinct !{!1, !2, !"_ZN15python_bindings9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE: %retptr"}
+!2 = distinct !{!2, !"_ZN15python_bindings9constructB3v14B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE"}
 !3 = !{!4}
-!4 = distinct !{!4, !5, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!5 = distinct !{!5, !"_ZN8test_ffi4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!4 = distinct !{!4, !5, !"_ZN15python_bindings4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!5 = distinct !{!5, !"_ZN15python_bindings4evenB3v10B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
 !6 = !{!7}
-!7 = distinct !{!7, !8, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
-!8 = distinct !{!8, !"_ZN8test_ffi3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
+!7 = distinct !{!7, !8, !"_ZN15python_bindings3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax: %retptr"}
+!8 = distinct !{!8, !"_ZN15python_bindings3oddB3v11B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2ax"}
 !9 = !{!10}
-!10 = distinct !{!10, !11, !"_ZN8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
-!11 = distinct !{!11, !"_ZN8test_ffi8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}
+!10 = distinct !{!10, !11, !"_ZN15python_bindings8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a: %retptr"}
+!11 = distinct !{!11, !"_ZN15python_bindings8destructB3v15B38c8tJTIeFIjxB2IKSgI4CrvQClQZ6FczSBAA_3dE7void_2a"}
