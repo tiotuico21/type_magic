@@ -44,30 +44,6 @@ extern__TYPEMAGICNAddIt6CallFnE = nb.types.ExternalFunction(
 def add_it(ptr):
 	return extern__TYPEMAGICNAddIt6CallFnE(ptr)
 
-extern__TYPEMAGICNSubArgs6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNSubArgs6CallFnE",
-	nb.core.typing.signature(
-		nb.types.float32, 
-		nb.types.voidptr, nb.types.float32, nb.types.boolean, nb.types.float32
-	)
-)
-
-@nb.njit(cache=False)
-def sub_args(ptr, arg1, arg2, arg3):
-	return extern__TYPEMAGICNSubArgs6CallFnE(ptr, arg1, arg2, arg3)
-
-extern__TYPEMAGICNIsTrue6CallFnE = nb.types.ExternalFunction(
-	"_TYPEMAGICNIsTrue6CallFnE",
-	nb.core.typing.signature(
-		nb.types.boolean, 
-		nb.types.voidptr, nb.types.boolean
-	)
-)
-
-@nb.njit(cache=False)
-def is_true(ptr, arg1):
-	return extern__TYPEMAGICNIsTrue6CallFnE(ptr, arg1)
-
 extern__TYPEMAGICNEven6CallFnE = nb.types.ExternalFunction(
 	"_TYPEMAGICNEven6CallFnE",
 	nb.core.typing.signature(

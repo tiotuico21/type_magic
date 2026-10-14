@@ -12,18 +12,6 @@ struct AddIt{
 		container::Binding<CallFn, int(void*)>>
 	STable;
 };
-struct SubArgs{
-	struct CallFn{};
-	typedef StaticTable<
-		container::Binding<CallFn, float(void*, float, bool, float)>>
-	STable;
-};
-struct IsTrue{
-	struct CallFn{};
-	typedef StaticTable<
-		container::Binding<CallFn, bool(void*, bool)>>
-	STable;
-};
 struct Even{
 	struct CallFn{};
 	typedef StaticTable<
@@ -82,48 +70,6 @@ using AddItModule = context::SimpleModule<
 	Meta<ImplAddIt>,
 	context::RequirementSet<>,
 	context::ImplementationSet<AddIt, FFIEntry<AddIt>>
->;
-
-
-extern "C" float sub_args(void* ctx, float arg1, bool arg2, float arg3);
-template <typename CONTEXT>
-struct ImplSubArgs{
-	float call(float arg1, bool arg2, float arg3){
-		float result;
-		return sub_args((CONTEXT*)this,arg1, arg2, arg3);
-	}
-	
-typedef StaticTable<
-        container::Binding<
-SubArgs::CallFn, Fn<&ImplSubArgs<CONTEXT>::call>>>
-		STable;
-
-};
-using SubArgsModule = context::SimpleModule<
-	Meta<ImplSubArgs>,
-	context::RequirementSet<>,
-	context::ImplementationSet<SubArgs, FFIEntry<SubArgs>>
->;
-
-
-extern "C" bool is_true(void* ctx, bool arg1);
-template <typename CONTEXT>
-struct ImplIsTrue{
-	bool call(bool arg1){
-		bool result;
-		return is_true((CONTEXT*)this,arg1);
-	}
-	
-typedef StaticTable<
-        container::Binding<
-IsTrue::CallFn, Fn<&ImplIsTrue<CONTEXT>::call>>>
-		STable;
-
-};
-using IsTrueModule = context::SimpleModule<
-	Meta<ImplIsTrue>,
-	context::RequirementSet<>,
-	context::ImplementationSet<IsTrue, FFIEntry<IsTrue>>
 >;
 
 
