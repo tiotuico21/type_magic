@@ -6,7 +6,7 @@ import numba as nb
 
 from llvmlite import binding
 
-binding.load_library_permanently("./my_dynamic_library.so")
+#binding.load_library_permanently("./my_dynamic_library.so")
 
 
 extern_construct = nb.types.ExternalFunction(

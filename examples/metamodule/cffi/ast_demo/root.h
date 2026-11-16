@@ -429,7 +429,7 @@ struct FFIGenImpl{
                     << "\n"
                     << "from llvmlite import binding\n"
                     << "\n"
-                    << "binding.load_library_permanently(\"./my_dynamic_library.so\")\n\n\n";
+                    << "#binding.load_library_permanently(\"./my_dynamic_library.so\")\n\n\n";
 
         addFunctionHeaders(header_file, python_file, client_logic_header_file, is_for_CPU);
         addFunctionBody(cpp_file, python_file, is_for_CPU);
@@ -437,7 +437,6 @@ struct FFIGenImpl{
         cpp_file.close();
 
        
-        std::cout << python_file.is_open() << '\n';
         python_file.close();
 
         // why fPIC smthn about address reolacation
@@ -708,7 +707,7 @@ struct FFIGenImpl{
             }
             std::string reg_str_func_name = get_type_name<KEY>();
 
-            std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
+            //std::cout << "________________________REGULAR FUNC" << reg_str_func_name << std::endl;
 
             //in charge of the extern definitions and njit definitions fir generated python files
             //in charge as well of the cpp definitions and implementions for generated c++ file to make
@@ -717,8 +716,8 @@ struct FFIGenImpl{
             {
                 typedef typename ITEM::Args method_args_list;
 
-                std::cout << "\n\nITEMMMMMMM COUNT" << std::endl;
-                std::cout << method_args_list::MapType::ITEM_COUNT << std::endl;
+                //std::cout << "\n\nITEMMMMMMM COUNT" << std::endl;
+                //std::cout << method_args_list::MapType::ITEM_COUNT << std::endl;
                 int param_amount = method_args_list::MapType::ITEM_COUNT;
 
                 typedef typename method_args_list::template PushFront<CONTEXT *>::type outter_args_list;
@@ -1216,7 +1215,7 @@ struct FFIGenImpl{
         }
         else{
             typedef typename T::MapType::HeadItemType CurrTrait; 
-            std::cout << "\n\nHEad: " << container::repr::type_name<CurrTrait>() << "/n/n" << std::endl;
+            //std::cout << "\n\nHEad: " << container::repr::type_name<CurrTrait>() << "/n/n" << std::endl;
          
 
             //make a typeset of all the specializations of ONE 
@@ -1281,8 +1280,8 @@ struct FFIGenImpl{
 
         bottom_code = replaceAll(bottom_code, "__TYPE__", toPascalCase(meta_name));
         bottom_code = replaceAll(bottom_code, "__NAME__", "_" + meta_name);
-        std::cout << "\n\nCODEEEEEEEEEEEEEE" << std::endl;
-        std::cout << top_code << std::endl;
+       // std::cout << "\n\nCODEEEEEEEEEEEEEE" << std::endl;
+      //  std::cout << top_code << std::endl;
         meta_trait_python_file << top_code << std::endl;
 
         std::string complete_extern_map_for_single_trait =
@@ -1292,8 +1291,8 @@ struct FFIGenImpl{
         
         std::cout << complete_extern_map_for_single_trait << std::endl;
         meta_trait_python_file << complete_extern_map_for_single_trait << std::endl;
-        std::cout << "\n\nBOTTOM CODE" << std::endl;
-        std::cout << bottom_code << std::endl;
+       // std::cout << "\n\nBOTTOM CODE" << std::endl;
+        //std::cout << bottom_code << std::endl;
         meta_trait_python_file << bottom_code << std::endl;
       
         //python_file << complete_extern_map_for_single_trait;

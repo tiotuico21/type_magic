@@ -26,7 +26,7 @@ import subprocess
 
 from llvmlite import binding
 
-binding.load_library_permanently("./my_dynamic_library.so")
+#binding.load_library_permanently("./my_dynamic_library.so")
 
 
 class My__TYPE__(object):

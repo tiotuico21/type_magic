@@ -23,6 +23,7 @@ from importlib.machinery import ModuleSpec
 class CONTEXT:
     pass
 
+  
 
 class FFIGenCodeGetter:
     @staticmethod
@@ -112,8 +113,6 @@ typedef typename BaseInputState
         for fn in fn_list:
             trait_list.append(UtilStrings.make_ffi_wrapper_str(fn))
 
-        print("\n\nINHERITED TRAITS")
-        print(inherited_trait_list)
         parsedInheritedTraitList = [
                     x["cpp_name"] if isinstance(x, dict) and "cpp_name" in x else x
                     for x in inherited_trait_list
@@ -317,7 +316,6 @@ class AnnotationGetter:
         sig = inspect.signature(fn)
         params = AnnotationGetter.get_cplus_param_list(fn)
 
-        print(f"Param list: {params}")
         return ", ".join(params)
     
     import inspect
@@ -432,14 +430,12 @@ class ApyGenerator:
                 continue
             param_list.append(f"arg{paramAmount}")
             paramAmount += 1
-        print(param_list)
         return param_list
 
     @staticmethod
     def make_param_list_with_ret_ptr(fn):
         param_list = ApyGenerator.make_func_param_list_Apy(fn)
         ret_ptr_list = ["retptr", *(param_list)]
-        print(ret_ptr_list)
         return ret_ptr_list
     @staticmethod
     def make_array_of_all_param_lists(fn_list, is_for_cpu):
@@ -454,8 +450,6 @@ class ApyGenerator:
             str_array_of_param_lists.append("retptr, ptr")
         for fn in fn_list:
             str_array_of_param_lists.append(", ".join(ApyGenerator.make_param_list_with_ret_ptr(fn)))
-        print("AAAA")
-        print(str_array_of_param_lists)
         return str_array_of_param_lists
         
     @staticmethod
@@ -515,8 +509,7 @@ def make_func_component_str(fn, fn_name):
 
     str_cpp_extern_func += param_list + ");"
     str_cpp_component = "template <typename CONTEXT>\nstruct Impl" + UtilStrings.to_pascal_case(fn_name) + "{\n\t" + AnnotationGetter.get_str_return_type(fn) + " call("
-    
-    print(f"length: {len(param_list)}")
+
     if len(AnnotationGetter.get_param_type_list(fn)) == 1:
         str_cpp_component += call_param_list + "){\n\t\t" + AnnotationGetter.get_str_return_type(fn) + " result;\n\t\t"
         str_cpp_component += "return " + fn_name + "((CONTEXT*)this);\n\t}\n\t"
@@ -594,8 +587,6 @@ def make_cpp_dict(fn_list, required_inherited_trait_dict):
         cpp_dict["RequiredTraits"].append(UtilStrings.to_pascal_case(item.__name__))
         param_list = AnnotationGetter.get_python_param_types(item)
         #signature = AnnotationGetter.make_numba_signature(item, param_list)
-        print("*****************")
-        print(item.__name__)
         #numba_fn = numba.cfunc(signature)(item)
         #numba_fn.compile(signature)
         #llvm_ir = numba_fn.inspect_llvm()
@@ -605,15 +596,12 @@ def make_cpp_dict(fn_list, required_inherited_trait_dict):
         #cpp_dict["LL_Files"].append(f"{item.__name__}.ll")
         #while (need_to_modify_llvm(item, item.__name__) != None):
         #  modify_llvm_func_name(item)
-        print("REQUIRED INHER TRAITS")
-        print(required_inherited_trait_dict)
         if item.__name__ in required_inherited_trait_dict:
-            print("here in the required inher traits")
             cpp_dict["RequiredInherited"][item.__name__] = []
             for trait in required_inherited_trait_dict[item.__name__]:
                 cpp_dict["RequiredInherited"][item.__name__].append(trait)
 
-    print(cpp_dict)
+    #print(cpp_dict)
     #print(cpp_dict["LL_Files"])
 
     return cpp_dict
@@ -675,31 +663,92 @@ def compile_and_run(fn_list, inherited_trait_list, main_file_name, is_for_cpu, r
     
     print("compilation complete")
 
+    print("========== AFTER G++ ==========", flush=True)
+    print("G++ return code:", result.returncode, flush=True)
+
+    if result.returncode != 0:
+        print("Compilation failed:", flush=True)
+        print(result.stderr, flush=True)
+        return
+
+    print("\n========== BEFORE ./main ==========", flush=True)
+
     result = subprocess.run(
         ["./main"],
-        #=True,
+        capture_output=True,
         text=True
     )
 
-    for item in  fn_list:
+    print("\n========== AFTER ./main ==========", flush=True)
+    print("MAIN RETURN CODE:", result.returncode, flush=True)
+    print("MAIN STDOUT:", result.stdout, flush=True)
+    print("MAIN STDERR:", result.stderr, flush=True)
+
+    print("\n========== ENTERING NUMBA LOOP ==========", flush=True)
+
+    # for item in  fn_list:
+    #     param_list = AnnotationGetter.get_python_param_types(item)
+    #     signature = AnnotationGetter.make_numba_signature(item, param_list)
+    #     print("inspecting and creating all llvm ir")
+    #     print(f"param_list: {param_list}\nsignature: {signature}")
+    #     print("*****************")
+    #     print(item.__name__)
+    #     print(f"creating numba fn for {item.__name__}")
+
+    #     print("\n========== BEFORE CFUNC ==========")
+    #     print("Function:", item)
+    #     print("Signature:", signature)
+
+    #     cfunc_decorator = numba.cfunc(signature)
+
+    #     print("\n========== AFTER CFUNC DECORATOR ==========")
+
+    #     numba_fn = cfunc_decorator(item)
+
+    #     print("\n========== AFTER CFUNC COMPILATION ==========")
+
+    #     print(numba_fn.inspect_llvm())
+
+    #     print("\n========== INSPECTING LLVM IR ==========")
+    #     numba_fn = numba.cfunc(signature)(item)
+    #     #numba_fn.compile(signature)
+    #     print("calling inspect_llvm")
+    #     llvm_ir = numba_fn.inspect_llvm()
+    #     with open(f"{item.__name__}.ll", "w") as f:
+    #         print(f"writing to the {item.__name__} ll file")
+    #         f.write(llvm_ir)
+
+    #     fn_trait_dict["LL_Files"].append(f"{item.__name__}.ll")
+    #     while (need_to_modify_llvm(item, item.__name__) != None):
+    #         modify_llvm_func_name(item)
+    for item in fn_list:
+        print(f"\n========== STARTING {item.__name__} ==========", flush=True)
+
         param_list = AnnotationGetter.get_python_param_types(item)
         signature = AnnotationGetter.make_numba_signature(item, param_list)
-        print("inspecting and creating all llvm ir")
-        print(f"param_list: {param_list}\nsignature: {signature}")
-        print("*****************")
-        print(item.__name__)
-        print(f"creating numba fn for {item.__name__}")
-        numba_fn = numba.cfunc(signature)(item)
-        #numba_fn.compile(signature)
-        print("calling inspect_llvm")
+
+        print("PARAMETERS:", param_list, flush=True)
+        print("SIGNATURE:", signature, flush=True)
+
+        print("BEFORE DECORATOR", flush=True)
+        cfunc_decorator = numba.cfunc(signature)
+
+        print("AFTER DECORATOR", flush=True)
+
+        print("BEFORE COMPILATION", flush=True)
+        numba_fn = cfunc_decorator(item)
+
+        print("AFTER COMPILATION", flush=True)
+
+        print("BEFORE INSPECT LLVM", flush=True)
         llvm_ir = numba_fn.inspect_llvm()
+
+        print("AFTER INSPECT LLVM", flush=True)
+
         with open(f"{item.__name__}.ll", "w") as f:
-            print(f"writing to the {item.__name__} ll file")
             f.write(llvm_ir)
 
-        fn_trait_dict["LL_Files"].append(f"{item.__name__}.ll")
-        while (need_to_modify_llvm(item, item.__name__) != None):
-            modify_llvm_func_name(item)
+        print(f"SUCCESSFULLY WROTE {item.__name__}.ll", flush=True)
     ll_list = fn_trait_dict["LL_Files"]
     obj_list = [ll.replace(".ll", ".o") for ll in ll_list]
     result = subprocess.run(
