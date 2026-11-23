@@ -147,9 +147,11 @@ def even(ctx: CONTEXT, arg1: int) -> int:
     
 def odd(ctx: CONTEXT, arg1: int) -> int:
     #imported_ctx = magic.test_ffi.construct()
-    arg1  = arg1 * 3 + 1
-    iter = bindings.python_bindings.even(ctx, arg1)
-    return iter + 1
+    #arg1  = arg1 * 3 + 1
+    #iter = bindings.python_bindings.even(ctx, arg1)
+    #return iter + 1
+    arg1 = arg1 * 3 + 1
+    return arg1 + 1
 
 def stopping_time(ctx: CONTEXT, arg1: int) -> int:
     imported_ctx = bindings.python_bindings.construct()

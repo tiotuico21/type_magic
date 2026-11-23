@@ -19,6 +19,8 @@ import importlib.abc
 import importlib.util
 from importlib.machinery import ModuleSpec
 
+from numba.core.ccallback import CFunc
+import inspect
 
 class CONTEXT:
     pass
@@ -727,30 +729,75 @@ def compile_and_run(fn_list, inherited_trait_list, main_file_name, is_for_cpu, r
         param_list = AnnotationGetter.get_python_param_types(item)
         signature = AnnotationGetter.make_numba_signature(item, param_list)
 
+
+        print("INSPECTING NUMBA.CFUNC SOURCE CODE", flush=True)
+        print(inspect.getsource(numba.cfunc))
+
+        print(inspect.getsource(CFunc.compile))
+        print(inspect.getsource(CFunc._compile_uncached))
+        print(inspect.getsource(CFunc.inspect_llvm))
+
         print("PARAMETERS:", param_list, flush=True)
         print("SIGNATURE:", signature, flush=True)
 
-        print("BEFORE DECORATOR", flush=True)
-        cfunc_decorator = numba.cfunc(signature)
+        # print("BEFORE DECORATOR", flush=True)
+        # cfunc_decorator = numba.cfunc(signature)
 
-        print("AFTER DECORATOR", flush=True)
+        # print("AFTER DECORATOR", flush=True)
 
-        print("BEFORE COMPILATION", flush=True)
-        numba_fn = cfunc_decorator(item)
+        # print("BEFORE COMPILATION", flush=True)
+        # numba_fn = cfunc_decorator(item)
 
-        print("AFTER COMPILATION", flush=True)
+        # print("AFTER COMPILATION", flush=True)
 
-        print("BEFORE INSPECT LLVM", flush=True)
-        llvm_ir = numba_fn.inspect_llvm()
+        # print("BEFORE INSPECT LLVM", flush=True)
+        # llvm_ir = numba_fn.inspect_llvm()
 
-        print("AFTER INSPECT LLVM", flush=True)
+        # print("AFTER INSPECT LLVM", flush=True)
 
-        with open(f"{item.__name__}.ll", "w") as f:
-            f.write(llvm_ir)
+        # with open(f"{item.__name__}.ll", "w") as f:
+        #     f.write(llvm_ir)
+     
 
-        print(f"SUCCESSFULLY WROTE {item.__name__}.ll", flush=True)
+        # # Create the CFunc object without calling its normal compile() method
+        # cfunc_obj = CFunc(
+        #     item,
+        #     (signature.args, signature.return_type),
+        #     locals={},
+        #     options={}
+        # )
+
+        # print("BEFORE _compile_uncached", flush=True)
+
+        # cres = cfunc_obj._compile_uncached()
+
+        # print("AFTER _compile_uncached", flush=True)
+
+        # llvm_ir = cres.library.get_llvm_str()
+
+        # print("AFTER get_llvm_str", flush=True)
+
+        # ll_filename = f"{item.__name__}.ll"
+
+        # with open(ll_filename, "w") as f:
+        #     f.write(llvm_ir)
+
+        # # Add the file to the final linker inputs
+        # fn_trait_dict["LL_Files"].append(ll_filename)
+
+
+        # # Save the LLVM IR for the final shared-library linking step
+        # with open(f"{item.__name__}.ll", "w") as f:
+        #     f.write(llvm_ir)
+
+        print(f"Successfully generated LLVM IR for {item.__name__}")
+        
     ll_list = fn_trait_dict["LL_Files"]
     obj_list = [ll.replace(".ll", ".o") for ll in ll_list]
+   
+    print("LL FILES:", ll_list, flush=True)
+    print("CFFI EXISTS:", pathlib.Path("cffi.cpp").exists(), flush=True)
+   
     result = subprocess.run(
     [
         "clang-22",

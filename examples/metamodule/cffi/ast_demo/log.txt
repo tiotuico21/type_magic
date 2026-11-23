@@ -1,0 +1,473 @@
+
+
+ENTERED FINDER - FULL NAME: bindings Path: None 
+
+
+
+
+FOUND - FULL NAME: bindings Path: None 
+
+
+compilation complete
+========== AFTER G++ ==========
+G++ return code: 0
+
+========== BEFORE ./main ==========
+
+========== AFTER ./main ==========
+MAIN RETURN CODE: 0
+MAIN STDOUT: is_open: 1
+fail:    0
+good:    1
+is_open: 1
+fail:    0
+good:    1
+THIS IS A SPECIALIZE TRAIT: container::TypeSet<FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<Even>, FFIEntry<Odd>, FFIEntry<StoppingTime>, FFIEntry<SubOne>, Print<int>, Print<float>, FFIEntry<Print<int> >, FFIEntry<Print<float> >, Log<int>, Log<float>, FFIEntry<Log<int> >, FFIEntry<Log<float> > >
+THIS IS ALL MY META TRAITS: container::TypeSet<FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<Even>, FFIEntry<Odd>, FFIEntry<StoppingTime>, FFIEntry<SubOne>, Print<int>, Print<float>, FFIEntry<Print<int> >, FFIEntry<Print<float> >, Log<int>, Log<float>, FFIEntry<Log<int> >, FFIEntry<Log<float> > >
+
+
+TRAITS THAT IMPLEMENT FFIcontainer::TypeSet<Meta<Print>, Meta<Log> >
+meta_print
+METAAAAAAAAA SET:container::TypeSet<Print<int>, Print<float> >/n/n
+
+
+TRAITSSSS print_int
+88888888888MEta FUNCPrint<int>::PrintFn
+single_entry: 
+_meta_print_type(nb.types.int32): nb.types.ExternalFunction(
+    "_TYPEMAGICNPrintIiE7PrintFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.int32
+    )
+),
+
+
+TRAITSSSS print_float
+88888888888MEta FUNCPrint<float>::PrintFn
+single_entry: 
+_meta_print_type(nb.types.float32): nb.types.ExternalFunction(
+    "_TYPEMAGICNPrintIfE7PrintFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.float32
+    )
+),
+
+
+Specializerssss: 
+_meta_print_type(nb.types.int32): nb.types.ExternalFunction(
+    "_TYPEMAGICNPrintIiE7PrintFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.int32
+    )
+),
+_meta_print_type(nb.types.float32): nb.types.ExternalFunction(
+    "_TYPEMAGICNPrintIfE7PrintFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.float32
+    )
+),
+_meta_print_ext_map = {
+    _meta_print_type(nb.types.int32): nb.types.ExternalFunction(
+        "_TYPEMAGICNPrintIiE7PrintFnE",
+        nb.core.typing.signature(
+            nb.types.void,
+            nb.types.voidptr, nb.types.int32
+        )
+    ),
+    _meta_print_type(nb.types.float32): nb.types.ExternalFunction(
+        "_TYPEMAGICNPrintIfE7PrintFnE",
+        nb.core.typing.signature(
+            nb.types.void,
+            nb.types.voidptr, nb.types.float32
+        )
+    ),
+}
+
+meta_log
+METAAAAAAAAA SET:container::TypeSet<Log<int>, Log<float> >/n/n
+
+
+TRAITSSSS log_int
+88888888888MEta FUNCLog<int>::LogFn
+single_entry: 
+_meta_log_type(nb.types.int32): nb.types.ExternalFunction(
+    "_TYPEMAGICNLogIiE5LogFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.int32
+    )
+),
+
+
+TRAITSSSS log_float
+88888888888MEta FUNCLog<float>::LogFn
+single_entry: 
+_meta_log_type(nb.types.float32): nb.types.ExternalFunction(
+    "_TYPEMAGICNLogIfE5LogFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.float32
+    )
+),
+
+
+Specializerssss: 
+_meta_log_type(nb.types.int32): nb.types.ExternalFunction(
+    "_TYPEMAGICNLogIiE5LogFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.int32
+    )
+),
+_meta_log_type(nb.types.float32): nb.types.ExternalFunction(
+    "_TYPEMAGICNLogIfE5LogFnE",
+    nb.core.typing.signature(
+        nb.types.void,
+        nb.types.voidptr, nb.types.float32
+    )
+),
+_meta_log_ext_map = {
+    _meta_log_type(nb.types.int32): nb.types.ExternalFunction(
+        "_TYPEMAGICNLogIiE5LogFnE",
+        nb.core.typing.signature(
+            nb.types.void,
+            nb.types.voidptr, nb.types.int32
+        )
+    ),
+    _meta_log_type(nb.types.float32): nb.types.ExternalFunction(
+        "_TYPEMAGICNLogIfE5LogFnE",
+        nb.core.typing.signature(
+            nb.types.void,
+            nb.types.voidptr, nb.types.float32
+        )
+    ),
+}
+
+
+
+ Every non generic trait
+container::TypeSet<context::ContextInfo, AddOne, AddIt, Even, Odd, StoppingTime, SubOne, FFIGen>
+
+
+ Every non generic trait that has FFI
+container::TypeSet<AddOne, AddIt, Even, Odd, StoppingTime, SubOne>
+
+
+ Every non generic trait
+container::TypeSet<FFIEntry<AddOne>, FFIEntry<AddIt>, FFIEntry<Even>, FFIEntry<Odd>, FFIEntry<StoppingTime>, FFIEntry<SubOne>, FFIEntry<Print<int> >, FFIEntry<Print<float> >, FFIEntry<Log<int> >, FFIEntry<Log<float> > >
+FFI generated
+
+MAIN STDERR: 
+
+========== ENTERING NUMBA LOOP ==========
+
+========== STARTING add_one ==========
+INSPECTING NUMBA.CFUNC SOURCE CODE
+def cfunc(sig, locals=MappingProxyType({}), cache=False, pipeline_class=None, **options):
+    """
+    This decorator is used to compile a Python function into a C callback
+    usable with foreign C libraries.
+
+    Usage::
+        @cfunc("float64(float64, float64)", nopython=True, cache=True)
+        def add(a, b):
+            return a + b
+
+    """
+    locals = dict(locals)
+    sig = sigutils.normalize_signature(sig)
+
+    def wrapper(func):
+        from numba.core.ccallback import CFunc
+        additional_args = {}
+        if pipeline_class is not None:
+            additional_args['pipeline_class'] = pipeline_class
+        res = CFunc(func, sig, locals=locals, options=options, **additional_args)
+        if cache:
+            res.enable_caching()
+        res.compile()
+        return res
+
+    return wrapper
+
+    @global_compiler_lock
+    def compile(self):
+        # Try to load from cache
+        cres = self._cache.load_overload(self._sig,
+                                         self._targetdescr.target_context)
+        if cres is None:
+            cres = self._compile_uncached()
+            self._cache.save_overload(self._sig, cres)
+        else:
+            self._cache_hits += 1
+
+        self._library = cres.library
+        self._wrapper_name = cres.fndesc.llvm_cfunc_wrapper_name
+        self._wrapper_address = self._library.get_pointer_to_function(
+            self._wrapper_name)
+
+    def _compile_uncached(self):
+        sig = self._sig
+
+        # Compile native function as well as cfunc wrapper
+        return self._compiler.compile(sig.args, sig.return_type)
+
+    def inspect_llvm(self):
+        """
+        Return the LLVM IR of the C callback definition.
+        """
+        return self._library.get_llvm_str()
+
+PARAMETERS: ['voidptr', 'float', 'bool', 'float']
+SIGNATURE: (void*, float32, bool, float32) -> float32
+Successfully generated LLVM IR for add_one
+
+========== STARTING add_it ==========
+INSPECTING NUMBA.CFUNC SOURCE CODE
+def cfunc(sig, locals=MappingProxyType({}), cache=False, pipeline_class=None, **options):
+    """
+    This decorator is used to compile a Python function into a C callback
+    usable with foreign C libraries.
+
+    Usage::
+        @cfunc("float64(float64, float64)", nopython=True, cache=True)
+        def add(a, b):
+            return a + b
+
+    """
+    locals = dict(locals)
+    sig = sigutils.normalize_signature(sig)
+
+    def wrapper(func):
+        from numba.core.ccallback import CFunc
+        additional_args = {}
+        if pipeline_class is not None:
+            additional_args['pipeline_class'] = pipeline_class
+        res = CFunc(func, sig, locals=locals, options=options, **additional_args)
+        if cache:
+            res.enable_caching()
+        res.compile()
+        return res
+
+    return wrapper
+
+    @global_compiler_lock
+    def compile(self):
+        # Try to load from cache
+        cres = self._cache.load_overload(self._sig,
+                                         self._targetdescr.target_context)
+        if cres is None:
+            cres = self._compile_uncached()
+            self._cache.save_overload(self._sig, cres)
+        else:
+            self._cache_hits += 1
+
+        self._library = cres.library
+        self._wrapper_name = cres.fndesc.llvm_cfunc_wrapper_name
+        self._wrapper_address = self._library.get_pointer_to_function(
+            self._wrapper_name)
+
+    def _compile_uncached(self):
+        sig = self._sig
+
+        # Compile native function as well as cfunc wrapper
+        return self._compiler.compile(sig.args, sig.return_type)
+
+    def inspect_llvm(self):
+        """
+        Return the LLVM IR of the C callback definition.
+        """
+        return self._library.get_llvm_str()
+
+PARAMETERS: ['voidptr']
+SIGNATURE: (void*,) -> int64
+Successfully generated LLVM IR for add_it
+
+========== STARTING even ==========
+INSPECTING NUMBA.CFUNC SOURCE CODE
+def cfunc(sig, locals=MappingProxyType({}), cache=False, pipeline_class=None, **options):
+    """
+    This decorator is used to compile a Python function into a C callback
+    usable with foreign C libraries.
+
+    Usage::
+        @cfunc("float64(float64, float64)", nopython=True, cache=True)
+        def add(a, b):
+            return a + b
+
+    """
+    locals = dict(locals)
+    sig = sigutils.normalize_signature(sig)
+
+    def wrapper(func):
+        from numba.core.ccallback import CFunc
+        additional_args = {}
+        if pipeline_class is not None:
+            additional_args['pipeline_class'] = pipeline_class
+        res = CFunc(func, sig, locals=locals, options=options, **additional_args)
+        if cache:
+            res.enable_caching()
+        res.compile()
+        return res
+
+    return wrapper
+
+    @global_compiler_lock
+    def compile(self):
+        # Try to load from cache
+        cres = self._cache.load_overload(self._sig,
+                                         self._targetdescr.target_context)
+        if cres is None:
+            cres = self._compile_uncached()
+            self._cache.save_overload(self._sig, cres)
+        else:
+            self._cache_hits += 1
+
+        self._library = cres.library
+        self._wrapper_name = cres.fndesc.llvm_cfunc_wrapper_name
+        self._wrapper_address = self._library.get_pointer_to_function(
+            self._wrapper_name)
+
+    def _compile_uncached(self):
+        sig = self._sig
+
+        # Compile native function as well as cfunc wrapper
+        return self._compiler.compile(sig.args, sig.return_type)
+
+    def inspect_llvm(self):
+        """
+        Return the LLVM IR of the C callback definition.
+        """
+        return self._library.get_llvm_str()
+
+PARAMETERS: ['voidptr', 'int']
+SIGNATURE: (void*, int64) -> int64
+Successfully generated LLVM IR for even
+
+========== STARTING odd ==========
+INSPECTING NUMBA.CFUNC SOURCE CODE
+def cfunc(sig, locals=MappingProxyType({}), cache=False, pipeline_class=None, **options):
+    """
+    This decorator is used to compile a Python function into a C callback
+    usable with foreign C libraries.
+
+    Usage::
+        @cfunc("float64(float64, float64)", nopython=True, cache=True)
+        def add(a, b):
+            return a + b
+
+    """
+    locals = dict(locals)
+    sig = sigutils.normalize_signature(sig)
+
+    def wrapper(func):
+        from numba.core.ccallback import CFunc
+        additional_args = {}
+        if pipeline_class is not None:
+            additional_args['pipeline_class'] = pipeline_class
+        res = CFunc(func, sig, locals=locals, options=options, **additional_args)
+        if cache:
+            res.enable_caching()
+        res.compile()
+        return res
+
+    return wrapper
+
+    @global_compiler_lock
+    def compile(self):
+        # Try to load from cache
+        cres = self._cache.load_overload(self._sig,
+                                         self._targetdescr.target_context)
+        if cres is None:
+            cres = self._compile_uncached()
+            self._cache.save_overload(self._sig, cres)
+        else:
+            self._cache_hits += 1
+
+        self._library = cres.library
+        self._wrapper_name = cres.fndesc.llvm_cfunc_wrapper_name
+        self._wrapper_address = self._library.get_pointer_to_function(
+            self._wrapper_name)
+
+    def _compile_uncached(self):
+        sig = self._sig
+
+        # Compile native function as well as cfunc wrapper
+        return self._compiler.compile(sig.args, sig.return_type)
+
+    def inspect_llvm(self):
+        """
+        Return the LLVM IR of the C callback definition.
+        """
+        return self._library.get_llvm_str()
+
+PARAMETERS: ['voidptr', 'int']
+SIGNATURE: (void*, int64) -> int64
+Successfully generated LLVM IR for odd
+
+========== STARTING stopping_time ==========
+INSPECTING NUMBA.CFUNC SOURCE CODE
+def cfunc(sig, locals=MappingProxyType({}), cache=False, pipeline_class=None, **options):
+    """
+    This decorator is used to compile a Python function into a C callback
+    usable with foreign C libraries.
+
+    Usage::
+        @cfunc("float64(float64, float64)", nopython=True, cache=True)
+        def add(a, b):
+            return a + b
+
+    """
+    locals = dict(locals)
+    sig = sigutils.normalize_signature(sig)
+
+    def wrapper(func):
+        from numba.core.ccallback import CFunc
+        additional_args = {}
+        if pipeline_class is not None:
+            additional_args['pipeline_class'] = pipeline_class
+        res = CFunc(func, sig, locals=locals, options=options, **additional_args)
+        if cache:
+            res.enable_caching()
+        res.compile()
+        return res
+
+    return wrapper
+
+    @global_compiler_lock
+    def compile(self):
+        # Try to load from cache
+        cres = self._cache.load_overload(self._sig,
+                                         self._targetdescr.target_context)
+        if cres is None:
+            cres = self._compile_uncached()
+            self._cache.save_overload(self._sig, cres)
+        else:
+            self._cache_hits += 1
+
+        self._library = cres.library
+        self._wrapper_name = cres.fndesc.llvm_cfunc_wrapper_name
+        self._wrapper_address = self._library.get_pointer_to_function(
+            self._wrapper_name)
+
+    def _compile_uncached(self):
+        sig = self._sig
+
+        # Compile native function as well as cfunc wrapper
+        return self._compiler.compile(sig.args, sig.return_type)
+
+    def inspect_llvm(self):
+        """
+        Return the LLVM IR of the C callback definition.
+        """
+        return self._library.get_llvm_str()
+
+PARAMETERS: ['voidptr', 'int']
+SIGNATURE: (void*, int64) -> int64
+Successfully generated LLVM IR for stopping_time
+LL FILES: []
+CFFI EXISTS: True

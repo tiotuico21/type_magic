@@ -18,7 +18,7 @@ class MagicLoader():
             if not pathlib.Path(f"./{name}.py").is_file():
                 print("No module")
                 print(f"Name failed to find: {name}\n\n")
-                setattr(module, name, None)
+                #setattr(module, name, None)
                 return None
             print("\n\nFOUND MODULE\n\n")
             fullname = f"bindings.{name}"
